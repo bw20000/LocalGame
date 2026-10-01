@@ -212,6 +212,14 @@ async function route(req, res, port) {
       const job = O.start(kind, pr.id, body.input || {}, { useLLM: body.useLLM !== false, review: !!body.review });
       return ok(res, { job: job.snapshot() });
     }
+    if (M === 'POST' && api[2] === 'reveal') {
+      // open the project folder in Finder / the file manager (this computer only)
+      const { execFile } = require('child_process');
+      const target = api[3] === 'game' ? pr.p('game') : api[3] === 'releases' ? pr.p('releases') : pr.dir;
+      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
+      execFile(cmd, [target], () => {});
+      return ok(res, { path: target });
+    }
     if (M === 'POST' && api[2] === 'restore') { const body = await readBody(req); try { pr.restore(String(body.version)); return ok(res, projectDetail(pr)); } catch (e) { return bad(res, e.message); } }
   }
   return bad(res, 'Not found', 404);

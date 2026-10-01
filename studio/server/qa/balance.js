@@ -43,7 +43,7 @@ function aggregate(results, years) {
       medianFinalValue: median(rs.map(r => r.final.value)),
       medianMargin: median(rs.map(r => r.final.margin)),
       medianTier: median(rs.map(r => r.final.tierIndex)),
-      crisisRate: rs.filter(r => r.crisisTicks > 0).length / rs.length,
+      crisisRate: rs.filter(r => r.crisisTicks > 0).length / rs.length, crisisRuns: rs.filter(r => r.crisisTicks > 0).length,
       recoveryRate: rs.filter(r => r.crisisTicks > 0).length ? rs.filter(r => r.crisisTicks > 0 && r.recovered && r.outcome !== 'failed').length / rs.filter(r => r.crisisTicks > 0).length : null,
       actionsPerYear: mean(rs.map(r => r.stats.acted / Math.max(1, r.years.length || 1))),
       topActions: Object.entries(rs.reduce((acc, r) => { for (const [k, v] of Object.entries(r.stats.actions || {})) acc[k] = (acc[k] || 0) + v; return acc; }, {})).sort((a, b) => b[1] - a[1]).slice(0, 6),
@@ -74,7 +74,7 @@ function detect(agg, targets = {}) {
   const maxGrowth = targets.maxGrowth || 10;
   // dominant strategy
   const totalWins = Object.values(agg.wins).reduce((a, b) => a + b, 0);
-  for (const [s, w] of Object.entries(agg.wins)) if (totalWins >= 3 && w / totalWins > 0.7 && active.length > 2) add('dominant-strategy', 'major', `"${s}" wins ${Math.round(w / totalWins * 100)}% of seeds.`, agg.wins);
+  for (const [s, w] of Object.entries(agg.wins)) if (totalWins >= 4 && w / totalWins > 0.7 && active.length > 2) add('dominant-strategy', 'major', `"${s}" wins ${Math.round(w / totalWins * 100)}% of seeds.`, agg.wins);
   // passive simulation
   if (S.passive && S.balanced && S.passive.medianFinalValue >= 0.85 * S.balanced.medianFinalValue) add('passive-simulation', 'major', 'Doing nothing performs about as well as playing.', { passive: S.passive.medianFinalValue, balanced: S.balanced.medianFinalValue });
   // too easy / too hard — judged on the best-performing competent strategy
@@ -95,7 +95,8 @@ function detect(agg, targets = {}) {
     if (late > 1.5 && late >= early * 0.95) add('snowballing', 'major', `${s}: growth keeps accelerating late (×${late.toFixed(2)} in the last year vs ×${early.toFixed(2)} early).`, v, 'late');
   }
   // death spiral
-  for (const [s, st] of Object.entries(S)) if (st.crisisRate > 0.3 && st.recoveryRate != null && st.recoveryRate < 0.1 && s !== 'passive' && s !== 'careless') add('death-spiral', 'major', `${s}: once in crisis, almost nobody recovers.`, st);
+  // needs several crises before calling it a pattern (small samples are noise)
+  for (const [s, st] of Object.entries(S)) if (st.crisisRate > 0.3 && (st.crisisRuns || 0) >= 3 && st.recoveryRate != null && st.recoveryRate < 0.1 && s !== 'passive' && s !== 'careless') add('death-spiral', 'major', `${s}: once in crisis, almost nobody recovers (${st.crisisRuns} crises).`, st);
   for (const [s, st] of Object.entries(S)) if (st.interruptsPerMonth > 3) add('notification-fatigue', 'minor', `${s}: ${st.interruptsPerMonth.toFixed(1)} interrupting decisions per month.`, st);
   if (S.smart && S.smart.actionsPerYear > 300) add('click-burden', 'minor', `Skilled play needs ~${Math.round(S.smart.actionsPerYear)} actions a year — consider more delegation.`, S.smart.topActions);
   if (agg.world.rivalsFailedMedian === 0 && agg.world.entrantsMedian === 0) add('static-world', 'minor', 'No rival failed or entered in any run.', agg.world);

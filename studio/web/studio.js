@@ -194,12 +194,14 @@
         <button class="btn" data-go="design">Design</button>
         <button class="btn" data-go="history">Build history</button>
         <button class="btn" data-remaster="1">Remaster</button>
+        <button class="btn" data-reveal="1" title="Open the project folder on this computer">Open project folder</button>
       </div>
       <div class="subtabs">${[['overview', 'Overview'], ['modify', 'Modify'], ['design', 'Design'], ['requirements', 'Requirements'], ['tests', 'Tests & QA'], ['balance', 'Balance'], ['screens', 'Screenshots'], ['history', 'Build history']].map(([k, l]) => `<button class="${k === tab ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</div>
       <div id="tabbody"></div>`;
     $$('[data-tab]').forEach(b => b.onclick = () => go(`#/project/${id}/${b.dataset.tab}`));
     $$('[data-go]').forEach(b => b.onclick = () => go(`#/project/${id}/${b.dataset.go}`));
     $$('[data-job]').forEach(b => b.onclick = async () => { const r = await api(`projects/${id}/jobs`, { method: 'POST', body: { kind: b.dataset.job } }); go(`#/job/${r.job.id}/${id}`); });
+    $('[data-reveal]').onclick = async () => { const r = await api(`projects/${id}/reveal`, { method: 'POST' }); toast('Opened ' + r.path); };
     $('[data-remaster]').onclick = async () => { if (!confirm('Rebuild this game from its prompt with the current studio (a new version; the old one stays in Build history)?')) return; const r = await api(`projects/${id}/jobs`, { method: 'POST', body: { kind: 'create' } }); go(`#/job/${r.job.id}/${id}`); };
     const body = $('#tabbody');
     const T = projectTabs[tab] || projectTabs.overview;

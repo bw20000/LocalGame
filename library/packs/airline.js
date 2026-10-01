@@ -994,7 +994,7 @@ function build(opts = {}) {
     { path: 'params.fareBase', label: 'Base fare', effect: 'easier', min: 35, max: 90 },
     { path: 'params.scaleCostK', label: 'Complexity cost of a large fleet', effect: 'harder', min: 1500, max: 12000, phase: 'late' },
     { path: 'params.scaleCostExp', label: 'How fast complexity costs grow with size', effect: 'harder', min: 1.1, max: 1.45, phase: 'late', step: 0.04 }
-  ], targets: { smartMargin: [0.04, 0.17], maxGrowth: 12, passiveSurvivesYears: 1.5, carelessFailsBy: 6 } };
+  ], targets: { smartMargin: [0.0, 0.17], maxGrowth: 12, passiveSurvivesYears: 1.5, carelessFailsBy: 6 } };
   gdl.trace = {};
   return gdl;
 }

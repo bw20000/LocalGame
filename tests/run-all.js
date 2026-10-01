@@ -185,6 +185,11 @@ const E = loadEngine();
       } finally { server.close(); }
     });
   }
+  if (!QUICK) {
+    await test('local-model pipeline with a mock OpenAI-compatible server (design stages, repair, change planner)', () => new Promise((resolve, reject) => {
+      require('child_process').execFile(process.execPath, [path.join(__dirname, 'llm-mock.js')], { timeout: 20 * 60 * 1000, maxBuffer: 1 << 24 }, (err, stdout) => { if (err) reject(new Error(String(stdout).split('\n').filter(l => /✗/.test(l)).join('; ') || err.message)); else resolve(); });
+    }));
+  }
   const failed = results.filter(r => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   fs.rmSync(TMP, { recursive: true, force: true });
