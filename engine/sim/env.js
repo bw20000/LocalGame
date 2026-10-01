@@ -80,7 +80,7 @@
       lerp: (a, b, t) => a + (b - a) * U.clamp(+t || 0, 0, 1),
       sigmoid: (x) => 1 / (1 + Math.exp(-(+x || 0))), sign: Math.sign,
       safe: (x, d) => (Number.isFinite(+x) ? +x : (d || 0)),
-      rand: () => R().next(), randn: (m, sd) => R().normal(m || 0, sd == null ? 1 : sd),
+      rand: (a, b) => a == null ? R().next() : b == null ? R().next() * a : a + R().next() * (b - a), randn: (m, sd) => R().normal(m || 0, sd == null ? 1 : sd),
       randInt: (a, b) => R().int(Math.round(a), Math.round(b)), chance: (p) => R().next() < (+p || 0),
       pick: (arr) => (Array.isArray(arr) ? R().pick(arr) : arr),
       len: (a) => (a == null ? 0 : a.length || 0),

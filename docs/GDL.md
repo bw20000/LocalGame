@@ -75,7 +75,7 @@ the browser or the file system.
 **Functions.**
 
 - Math: `min max clamp abs round floor ceil sqrt log exp pow lerp sigmoid`
-- Random, seeded and deterministic: `rand randn randInt chance pick`
+- Random, seeded and deterministic: `rand()`, `rand(max)`, `rand(min, max)`, `randn(mean, sd)`, `randInt(a, b)`, `chance(p)`, `pick(list)`
 - Lists, where `src` is a kind name or a list and the second argument is evaluated per `it`:
   - `count(src, cond)`, `sum(src, expr, cond)`, `avg`, `maxOf`, `minOf`
   - `find(src, cond)`, `filter`, `any`, `all`

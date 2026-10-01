@@ -66,7 +66,7 @@ function build(opts = {}) {
       disclaimer: 'All companies, founders, funds and investors are fictional. Market behavior is simplified and illustrative, not investment advice.',
       goal: control ? 'Turn {player.name}\'s fund into a top-quartile track record: buy well, improve, exit, and raise bigger funds.' : 'Build {player.name} into a legendary firm: back the outliers, manage the follow-ons, return real cash to your LPs.' },
     time: { unit: 'month', start: '2026-01-01' }, currency: { symbol: '$' }, warmup: 18,
-    params: { dealFlow: control ? 0.1 : 0.3, startCompanies: control ? 55 : 80, feePct: 0.02, exitPremium: 1.25, failRate: 1, teamCost: 55000 },
+    params: { dealFlow: control ? 0.1 : 0.3, startCompanies: control ? 55 : 80, feePct: 0.02, exitPremium: 1.15, failRate: 1, teamCost: 55000 },
     finance: { baseRate: '0.05', creditLimit: 'max(5000000, org.committed * 0.1)' },
     world: {
       cycle: C.cycle({ boom: 1.04, bust: 0.88, recession: f.recessions, perYear: 12, news: { expansion: 'Risk-on: valuations are rising and exits are easy', recession: 'Risk-off: valuations crash and the IPO window slams shut', slowdown: 'Investors grow cautious; rounds take longer to close', recovery: 'Capital is flowing again' } }),
@@ -117,7 +117,7 @@ function build(opts = {}) {
         },
         tickWhen: "self.status == 'active'",
         tick: [
-          { op: 'set', path: 'self.growth', value: 'clamp(self.growth * 0.986 + (self.quality - 55) * 0.0003 + (self.sector.heat - 1) * 0.003 - log(1 + self.revenue / 40M) * 0.003 + randn(0, self.sector.vol * 0.025), -0.5, 3)' },
+          { op: 'set', path: 'self.growth', value: 'clamp(self.growth * 0.975 + (self.quality - 55) * 0.0011 + (self.sector.heat - 1) * 0.003 - log(1 + self.revenue / 40M) * 0.005 + randn(0, self.sector.vol * 0.025), -0.5, max(0.25, 2 - log(1 + self.revenue / 20M) * 0.5))' },
           { op: 'set', path: 'self.revenue', value: 'max(20k, self.revenue * (1 + self.growth / 12 + (world.demand - 1) * 0.03))' },
           { op: 'set', path: 'self.margin', value: 'clamp(self.margin + (self.sector.marginMature + self.opsBoost - 2.6 * exp(-self.revenue / 9M) + (self.quality - 55) * 0.002 - self.margin) * 0.05, -4, 0.6)' },
           { op: 'set', path: 'self.cash', value: 'self.cash + self.revenue * self.margin / 12 - self.debt * world.rates / 12' },
@@ -195,10 +195,10 @@ function build(opts = {}) {
         describe: 'Take part in a company\'s open round on the terms offered. Fast and certain — but you pay the asking price.', tradeoff: 'Every dollar here is a dollar you cannot use for follow-ons in your winners.', risk: 'Most early-stage companies fail. Team quality is only an estimate until you sit on the board.',
         params: [{ id: 'company', label: 'Company', type: 'entity', kind: 'company', filter: "it.status == 'active' && !it.owner && it.raising && it.raiseAmount > 0", sort: "est(it, 'quality').value * (1 + it.growth) * it.sector.heat" },
           { id: 'share', label: 'Your part of the round', type: 'choice', default: '1', aiValue: '1', options: [{ value: 0.5, label: 'Half — co-invest', describe: 'Smaller stake, no board seat' }, { value: 1, label: 'Lead it all', describe: 'Board seat; full round' }] }],
-        vars: { amt: 'param.company.raiseAmount * param.share', post: 'param.company.valuation + param.company.raiseAmount' },
+        vars: { amt: 'param.company.raiseAmount * param.share', post: 'param.company.valuation * 0.8 + param.company.raiseAmount' },
         requires: [{ expr: 'org.cash >= amt', msg: 'Not enough dry powder' }, { expr: capacityOk, msg: 'Your partners are at capacity — hire a partner first' }],
         cost: { cash: 'amt' }, costCategory: 'Investments', capex: true,
-        preview: [{ label: 'Pre-money valuation', expr: 'param.company.valuation', format: 'money' }, { label: 'Your ownership after the round', expr: 'amt / post', format: 'pct1' }, { label: 'Team & product (estimate)', expr: "est(param.company, 'quality').value", format: 'score' }, { label: 'Growth', expr: 'param.company.growth', format: 'pct' }, { label: 'Months of runway after the round', expr: '(param.company.cash + param.company.raiseAmount) / max(1, param.company.burn)', format: 'int' }],
+        preview: [{ label: 'Pre-money valuation (round price)', expr: 'param.company.valuation * 0.8', format: 'money' }, { label: 'Your ownership after the round', expr: 'amt / post', format: 'pct1' }, { label: 'Team & product (estimate)', expr: "est(param.company, 'quality').value", format: 'score' }, { label: 'Growth', expr: 'param.company.growth', format: 'pct' }, { label: 'Months of runway after the round', expr: '(param.company.cash + param.company.raiseAmount) / max(1, param.company.burn)', format: 'int' }],
         effects: [{ op: 'transfer', target: 'param.company', to: 'org' }, { op: 'set', target: 'param.company', field: 'stake', value: 'amt / post' }, { op: 'set', target: 'param.company', field: 'invested', value: 'amt' }, { op: 'set', target: 'param.company', field: 'cash', value: 'param.company.cash + param.company.raiseAmount' }, { op: 'set', target: 'param.company', field: 'raising', value: 'false' }, { op: 'set', target: 'param.company', field: 'boardSeat', value: 'param.share >= 1' }, { op: 'set', target: 'param.company', field: 'acquiredAt', value: 'time.tick' }],
         result: 'Invested {money(amt)} in {param.company.name} for {pct(amt / post)}',
         ai: { score: `(${capacityOk}) && org.cash > amt * (1 + org.reserve * 2) && (isPlayer(org) || time.tick - param.company.raiseOpened >= 2) ? ((param.company.quality + randn(0, 14)) - 58) * 1000 * param.company.sector.heat : 0`, candidates: 4, news: '{org.name} leads a round in {param.company.name}' } },
@@ -217,10 +217,10 @@ function build(opts = {}) {
         effects: [{ op: 'set', path: 'self.stake', value: '(self.stake * self.valuation + amt) / post' }, { op: 'set', path: 'self.invested', value: 'self.invested + amt' }, { op: 'set', path: 'self.cash', value: 'self.cash + self.raiseAmount' }, { op: 'set', path: 'self.raising', value: 'false' }],
         result: 'Followed on in {self.name} with {money(amt)}',
         ai: { score: "self.raising && org.cash > self.raiseAmount * 1.5 && (self.quality + randn(0, 10)) > 50 ? self.raiseAmount : 0", selfSample: 8, news: '{org.name} doubles down on {self.name}' } },
-      { id: 'boardWork', label: 'Roll up your sleeves', verb: 'Help', kind: 'company', category: 'portfolio', icon: 'wrench', cooldown: 6,
+      { id: 'boardWork', label: 'Roll up your sleeves', verb: 'Help', kind: 'company', category: 'portfolio', icon: 'wrench', cooldown: 12,
         describe: 'Spend partner time: recruiting, intros, strategy. Raises execution quality — and you learn how good the team really is.', tradeoff: 'Partner time is finite; it costs travel and focus.',
-        cost: { cash: '25000' }, costCategory: 'Portfolio support',
-        effects: [{ op: 'add', path: 'self.quality', value: 'rand(2, 6)' }, { op: 'observe', target: 'self', field: 'quality', quality: '0.85' }, { op: 'resource', id: 'reputation', add: '0.3' }],
+        cost: { cash: '60000' }, costCategory: 'Portfolio support', requires: [{ expr: 'self.boardSeat', msg: 'You need a board seat' }],
+        effects: [{ op: 'add', path: 'self.quality', value: 'rand(0, 4)' }, { op: 'observe', target: 'self', field: 'quality', quality: '0.85' }, { op: 'resource', id: 'reputation', add: '0.3' }],
         result: 'You spent a month helping {self.name}', ai: { score: 'self.moic > 1.5 && self.boardSeat ? 1000 : 0', selfSample: 3 } }
     );
   } else {

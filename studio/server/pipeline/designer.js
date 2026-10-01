@@ -15,17 +15,19 @@ const ARCHETYPES = {
   'project-lifecycle': () => tryReq('slate'),
   'deal-and-portfolio': () => tryReq('portfolio'),
   'client-agency': () => tryReq('agency'),
-  'roster-and-season': () => tryReq('roster'),
+  'roster-and-season': () => tryReq('institution'),
   'institution-stewardship': () => tryReq('institution')
 };
 function tryReq(name) { const p = path.join(LIBRARY, 'packs', 'archetypes', name + '.js'); return fs.existsSync(p) ? require(p) : require(path.join(LIBRARY, 'packs', 'archetypes', 'venue.js')); }
 
 function genreInfo(id) { return lib('fantasies.json').genres.find(g => g.id === id) || null; }
 /* Which design module builds this genre. */
+/* Genres whose best design lives in a different archetype than their library loop suggests. */
+const LOOP_OVERRIDE = { 'hospital-system': 'operate-and-expand' };
 function chooseModule(genre) {
   if (genre && PACKS[genre]) return { kind: 'pack', id: genre, mod: PACKS[genre]() };
   const g = genreInfo(genre);
-  const loop = g ? g.loop : 'operate-and-expand';
+  const loop = LOOP_OVERRIDE[genre] || (g ? g.loop : 'operate-and-expand');
   const mod = (ARCHETYPES[loop] || ARCHETYPES['operate-and-expand'])();
   return { kind: 'archetype', id: mod.id, loop, mod, lexiconGenre: (mod.genres || []).includes(genre) ? genre : (genre && mod.LEX && mod.LEX[genre] ? genre : null) };
 }

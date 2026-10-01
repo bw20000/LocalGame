@@ -474,20 +474,39 @@ async function runModify(job) {
       const dBefore = balance.diagnose(beforeRep, { phase: balStep.focus });
       for (const w of dBefore.why) job.note('balance', 'Why: ' + w);
       if ((balStep.ops || []).length) job.note('balance', 'Structural change: ' + (balStep.notes || []).filter(n => /system|Adds/.test(n)).join(' '));
-      const ab = await balance.autoBalance(gdl, { iterations: 2, seeds: sb, years: yb, strategies, focus: balStep.focus, direction: balStep.direction === 'auto' ? undefined : balStep.direction, onProgress: (p) => job.push('progress', { stage: 'balance', detail: `rebalancing · round ${p.iteration + 1} · run ${p.done}/${p.total}` }) });
-      const ops = []; for (const k of Object.keys(ab.gdl.params || {})) if (ab.gdl.params[k] !== gdl.params[k]) ops.push({ op: 'set', path: 'params.' + k, value: ab.gdl.params[k], why: 'rebalance' });
+      // With a structural change in place, the player's report has been answered; further knob tuning
+      // follows the measurements only (no forced direction) and must respect guardrails.
+      const structural = (balStep.ops || []).length > 0;
+      const ab = await balance.autoBalance(gdl, { iterations: 2, seeds: sb, years: yb, strategies, focus: balStep.focus, direction: structural || balStep.direction === 'auto' ? undefined : balStep.direction, onProgress: (p) => job.push('progress', { stage: 'balance', detail: `rebalancing · round ${p.iteration + 1} · run ${p.done}/${p.total}` }) });
+      const guard = (d) => {
+        const v = [];
+        if (dBefore.metrics.survival != null && d.metrics.survival != null && d.metrics.survival < dBefore.metrics.survival - 0.15) v.push(`competent survival ${Math.round(dBefore.metrics.survival * 100)}% → ${Math.round(d.metrics.survival * 100)}%`);
+        if (late && dBefore.metrics.earlyGrowth && d.metrics.earlyGrowth && d.metrics.earlyGrowth < dBefore.metrics.earlyGrowth * 0.75) v.push(`early growth ×${dBefore.metrics.earlyGrowth.toFixed(2)} → ×${d.metrics.earlyGrowth.toFixed(2)}`);
+        return v;
+      };
+      // candidates: each measured configuration (structural only, then each tuning round)
+      const cands = ab.reports.map((r, i) => ({ i, rep: r.rep, params: r.params, d: balance.diagnose(r.rep, { phase: balStep.focus }) }));
+      for (const c of cands) c.violations = guard(c.d);
+      const ok = cands.filter(c => !c.violations.length);
+      const harder = balStep.direction !== 'easier';
+      const score = (c) => harder ? -((c.d.metrics.lateGrowth || 1) + (c.d.metrics.lateMargin || 0)) : (c.d.metrics.survival || 0);
+      const pick = (ok.length ? ok : cands.slice().sort((a, b) => (b.d.metrics.survival || 0) - (a.d.metrics.survival || 0)).slice(0, 1)).sort((a, b) => score(b) - score(a))[0];
       for (const h of ab.history) for (const t of h.tuning) job.note('balance', t.why);
-      if (ops.length) { gdl = ab.gdl; recordPatch(pr, request, ops, 'balance'); pr.writeGame(gdl); }
-      balanceRep = ab.lastReport;
-      const dAfter = balance.diagnose(balanceRep, { phase: balStep.focus });
+      if (pick.i < cands.length - 1) job.note('balance', `Guardrails: kept round ${pick.i + 1} of ${cands.length}${cands[cands.length - 1].violations.length ? ' — later tuning went too far (' + cands[cands.length - 1].violations.join('; ') + ')' : ''}.`);
+      if (!ok.length) job.note('balance', 'No configuration met every guardrail; kept the one where the most competent strategies survive.');
+      const ops = []; for (const k of Object.keys(pick.params || {})) if (pick.params[k] !== gdl.params[k]) ops.push({ op: 'set', path: 'params.' + k, value: pick.params[k], why: 'rebalance' });
+      if (ops.length) { for (const o of ops) gdl.params[o.path.slice(7)] = o.value; recordPatch(pr, request, ops, 'balance'); }
+      pr.writeGame(gdl);
+      balanceRep = pick.rep;
+      const dAfter = pick.d;
       const pc = (x) => x == null ? '—' : Math.round(x * 100) + '%';
       const fx = (x) => x == null ? '—' : '×' + x.toFixed(2);
       const rows = [['Late-game operating margin', pc(dBefore.metrics.lateMargin), pc(dAfter.metrics.lateMargin)], ['Late-game value growth per year', fx(dBefore.metrics.lateGrowth), fx(dAfter.metrics.lateGrowth)], ['Early-game value growth per year', fx(dBefore.metrics.earlyGrowth), fx(dAfter.metrics.earlyGrowth)], ['Runs finishing #1', pc(dBefore.metrics.topShare), pc(dAfter.metrics.topShare)], ['Cash as share of value at the end', pc(dBefore.metrics.cashShare), pc(dAfter.metrics.cashShare)], ['Competent strategies surviving', pc(dBefore.metrics.survival), pc(dAfter.metrics.survival)]];
       for (const r of rows) job.note('balance', `${r[0]}: ${r[1]} → ${r[2]}`);
-      const improved = balStep.direction === 'harder' ? ((dAfter.metrics.lateGrowth || 0) < (dBefore.metrics.lateGrowth || 0) || (dAfter.metrics.lateMargin || 0) < (dBefore.metrics.lateMargin || 0)) : balStep.direction === 'easier' ? (dAfter.metrics.survival || 0) >= (dBefore.metrics.survival || 0) : true;
+      const improved = (balStep.direction === 'harder' ? ((dAfter.metrics.lateGrowth || 0) < (dBefore.metrics.lateGrowth || 0) || (dAfter.metrics.lateMargin || 0) < (dBefore.metrics.lateMargin || 0)) : balStep.direction === 'easier' ? (dAfter.metrics.survival || 0) >= (dBefore.metrics.survival || 0) : true) && !pick.violations.length;
       const earlyKept = dBefore.metrics.earlyGrowth == null || dAfter.metrics.earlyGrowth == null || dAfter.metrics.earlyGrowth >= dBefore.metrics.earlyGrowth * 0.85;
-      job.note('balance', improved ? `Verdict: the ${late ? 'late game' : 'game'} is measurably ${balStep.direction === 'easier' ? 'easier' : 'harder'}${late ? (earlyKept ? ', and the opening plays about the same' : ' — the opening also got harder') : ''}.` : 'Verdict: the measurements did not move enough — try again or adjust the knobs on the Balance page.');
-      pr.writeMemory('BALANCE_REPORT', `# Balance report — ${gdl.meta.title}\n\n_${new Date().toISOString().slice(0, 16).replace('T', ' ')}_ · Request: “${request}”\n\n## Diagnosis (before)\n${dBefore.why.map(w => '- ' + w).join('\n')}\n\n## Changes\n${(balStep.notes || []).map(n => '- ' + n).join('\n')}\n${ab.history.flatMap(h => h.tuning).map(t => '- ' + t.why).join('\n')}\n\n## Before → after (same seeds, ${sb * strategies.length} playthroughs × ${yb} years each)\n\n| Measure | Before | After |\n|---|---|---|\n${rows.map(r => `| ${r[0]} | ${r[1]} | ${r[2]} |`).join('\n')}\n\n**Verdict:** ${improved ? 'improved' : 'not improved'}${late ? (earlyKept ? '; early game preserved' : '; early game also affected') : ''}.\n\n## Diagnosis (after)\n${dAfter.why.map(w => '- ' + w).join('\n')}\n` + balanceMarkdown(gdl.meta.title, ab.history).replace(/^# .*\n/, '\n## Rebalancing rounds\n'));
+      job.note('balance', improved ? `Verdict: the ${late ? 'late game' : 'game'} is measurably ${balStep.direction === 'easier' ? 'easier' : 'harder'}${late ? (earlyKept ? ', and the opening plays about the same' : ' — the opening also got somewhat harder') : ''}.` : pick.violations.length ? `Verdict: partial — ${pick.violations.join('; ')}. Review the balance report before shipping.` : 'Verdict: the measurements did not move enough — the dominance costs still apply to big companies; try again or adjust the knobs on the Balance page.');
+      pr.writeMemory('BALANCE_REPORT', `# Balance report — ${gdl.meta.title}\n\n_${new Date().toISOString().slice(0, 16).replace('T', ' ')}_ · Request: “${request}”\n\n## Diagnosis (before)\n${dBefore.why.map(w => '- ' + w).join('\n')}\n\n## Changes\n${(balStep.notes || []).map(n => '- ' + n).join('\n')}\n${ab.history.flatMap(h => h.tuning).map(t => '- ' + t.why).join('\n')}\n\n## Before → after (same seeds, ${sb * strategies.length} playthroughs × ${yb} years each)\n\n| Measure | Before | After |\n|---|---|---|\n${rows.map(r => `| ${r[0]} | ${r[1]} | ${r[2]} |`).join('\n')}\n\n**Verdict:** ${improved ? 'improved' : pick.violations.length ? 'partial (' + pick.violations.join('; ') + ')' : 'not measurably changed'}${late ? (earlyKept ? '; early game preserved' : '; early game also affected') : ''}.\n\n## Diagnosis (after)\n${dAfter.why.map(w => '- ' + w).join('\n')}\n` + balanceMarkdown(gdl.meta.title, ab.history).replace(/^# .*\n/, '\n## Rebalancing rounds\n'));
     } else {
       balanceRep = await balance.run(gdl, { seeds, years: Math.min(years, 5), onProgress: (d, n) => job.push('progress', { stage: 'balance', detail: `run ${d}/${n}` }) });
       job.note('balance', `Re-simulated after the change: ${balanceRep.findings.map(f => f.id).join(', ') || 'no findings'}`);

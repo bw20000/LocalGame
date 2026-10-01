@@ -40,10 +40,11 @@ function mentionScore(request, label) { const r = new Set(words(request).map(ste
 function targetKind(gdl, request) {
   let best = null, bs = 0;
   for (const [k, kd] of Object.entries(gdl.kinds || {})) {
-    const sc = mentionScore(request, `${k} ${kd.label || ''} ${kd.plural || ''}`) * (kd.operate ? 1.5 : 1);
+    const managed = managedKinds(gdl).includes(k);
+    const sc = mentionScore(request, `${k} ${kd.label || ''} ${kd.plural || ''}`) * (kd.operate ? 1.5 : managed ? 1.2 : 0.5);
     if (sc > bs) { bs = sc; best = k; }
   }
-  return best || operatingKinds(gdl)[0] || null;
+  return best || operatingKinds(gdl)[0] || managedKinds(gdl)[0] || null;
 }
 function targetScreen(gdl, request) {
   const screens = (gdl.ui && gdl.ui.screens) || {};
@@ -57,11 +58,20 @@ function targetScreen(gdl, request) {
   return bs >= 1 ? best : null;
 }
 const navLabel = (gdl, sid) => { const n = ((gdl.ui && gdl.ui.nav) || []).find(x => x.id === sid); return n ? n.label : sid; };
-const creates = (a, k) => (a.effects || []).some(op => op.op === 'create' && op.kind === k);
+/* Does an action bring a new unit of `k` into the company? (create it, or take ownership of one) */
+const creates = (a, k) => {
+  const walk = (ops) => (ops || []).some(op => (op.op === 'create' && op.kind === k) || (op.op === 'transfer' && /org/.test(String(op.to)) && (a.params || []).some(p => p.kind === k && String(op.target).includes('param.' + p.id))) || walk(op.then) || walk(op.else) || walk(op.do));
+  return walk(a.effects);
+};
+/* Kinds the player manages: owned lists on screens, or units with create/adjust actions. */
+function managedKinds(gdl) {
+  const acts = arr(gdl.actions);
+  return Object.keys(gdl.kinds || {}).map(k => ({ k, n: acts.filter(a => !a.aiOnly && a.ai && (a.kind === k || creates(a, k))).length + (gdl.kinds[k].operate ? 2 : 0) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).map(x => x.k);
+}
 function actionsFor(gdl, kind) {
   const acts = arr(gdl.actions);
   return {
-    create: acts.filter(a => a.scope !== 'entity' && !a.kind && creates(a, kind) && a.ai),
+    create: acts.filter(a => a.scope !== 'entity' && !a.kind && creates(a, kind) && a.ai && !a.playerOnly),
     adjust: acts.filter(a => a.kind === kind && a.ai),
     adjustManual: acts.filter(a => a.kind === kind && !a.ai && a.forecast && a.params && a.params.length === 1 && a.params[0].type === 'choice'),
     supply: acts.filter(a => !a.kind && a.ai && !creates(a, kind) && (a.effects || []).some(op => op.op === 'project' || op.op === 'create') && !(a.effects || []).some(op => op.op === 'acquireOrg' || op.op === 'mergeOrg' || op.op === 'negotiate') && /(lease|order|hire|buy|recruit|acquire|build|purchase|sign)/i.test(a.id + ' ' + a.label))
@@ -100,11 +110,16 @@ function recipeDelegate(gdl, request) {
   const existing = new Set(arr(gdl.policies).map(p => p.id));
   const auto = (id, max, min) => ({ op: 'autoAct', action: id, max: String(max), minScore: min });
   // 1) growth strategy: where the planners take the network next, and how fast
-  const growthOpts = [
+  const growthOpts = open ? [
     { value: 'manual', label: 'Manual', describe: `You plan every ${L} yourself.` },
-    { value: 'cautious', label: 'Cautious', describe: `Planners add a ${L} only when the forecast is clearly profitable, and grow strong ones.`, effects: [].concat(open ? [auto(open.id, 1, 'max(1, org.revenueYear * 0.004)')] : [], growers.map(a => auto(a.id, 1, '0'))) },
-    { value: 'steady', label: 'Steady growth', describe: `Planners open the best opportunities each month and add capacity where demand spills.`, effects: [].concat(open ? [auto(open.id, 2, '0')] : [], growers.map(a => auto(a.id, 2, '0'))) },
-    { value: 'aggressive', label: 'Land grab', describe: `Planners expand fast — more ${Ls}, thinner margins, more risk.`, effects: [].concat(open ? [auto(open.id, 3, '-(org.revenueYear * 0.002)')] : [], growers.map(a => auto(a.id, 3, '0'))) }
+    { value: 'cautious', label: 'Cautious', describe: `Your team adds a ${L} only when the numbers are clearly good, and looks after the ones you have.`, effects: [].concat([auto(open.id, 1, 'max(1, org.revenueYear * 0.004)')], growers.map(a => auto(a.id, 1, '0'))) },
+    { value: 'steady', label: 'Steady growth', describe: `Your team takes the best opportunities each month and invests where it pays.`, effects: [].concat([auto(open.id, 2, '0')], growers.map(a => auto(a.id, 2, '0'))) },
+    { value: 'aggressive', label: 'Land grab', describe: `Your team expands fast — more ${Ls}, thinner margins, more risk.`, effects: [].concat([auto(open.id, 3, '-(org.revenueYear * 0.002)')], growers.map(a => auto(a.id, 3, '0'))) }
+  ] : [
+    { value: 'manual', label: 'Manual', describe: `You manage every ${L} yourself.` },
+    { value: 'light', label: 'Light touch', describe: `Your staff step in only when a ${L} clearly needs it.`, effects: growers.map(a => auto(a.id, 1, 'max(1, org.revenueYear * 0.002)')) },
+    { value: 'steady', label: 'Standard', describe: `Your staff run the routine decisions for every ${L} each month.`, effects: growers.map(a => auto(a.id, 1, '0')) },
+    { value: 'proactive', label: 'Proactive', describe: `Your staff push every ${L} hard — more spending, more upside.`, effects: growers.map(a => auto(a.id, 2, '0')) }
   ];
   ops.push({ op: 'append', path: 'policies', value: { id: pid('Growth'), label: `${kd.label || kind} strategy`, scope: 'org', default: 'steady', aiDefault: 'manual', every: 4, playerOnly: true,
     describe: `Set the direction; your planning team picks, launches and sizes individual ${Ls} every month using the same forecasts you see. Switch to Manual any time.`, options: growthOpts }, why: `Strategic layer over individual ${Ls}` });
@@ -145,7 +160,7 @@ function recipeDelegate(gdl, request) {
   }
   // 5) needs-you queue should stop nagging about routine unit work the team now owns
   ops.push({ op: 'set', path: 'meta.delegation', value: Object.assign({}, gdl.meta && gdl.meta.delegation, { [kind]: pid('Growth') }) });
-  notes.push(`New policies: ${kd.label || kind} strategy (Manual / Cautious / Steady / Land grab)${closers.length ? ', underperformer handling' : ''}${A.supply.length ? ', capacity planning' : ''}. Defaults hand routine ${L} work to your planners; Manual restores full control.`);
+  notes.push(`New policies: ${kd.label || kind} strategy (${growthOpts.map(o => o.label).join(' / ')})${closers.length ? ', underperformer handling' : ''}${A.supply.length ? ', capacity planning' : ''}. Defaults hand routine ${L} work to your planners; Manual restores full control.`);
   return { ops, notes, kind };
 }
 
@@ -168,6 +183,26 @@ function recipeBalance(gdl, request, cls) {
   return { ops, notes, needsLab: true, focus: cls.phase === 'late' ? 'late' : undefined, direction: cls.direction };
 }
 
+/* A natural category to group a kind by: a reference to a catalog (records) kind — e.g. aircraft
+   type, restaurant concept, company sector — or one hop further, or a short text field. */
+function naturalGroup(gdl, kind) {
+  const kd = gdl.kinds[kind] || {};
+  const fields = Object.entries(kd.fields || {}).map(([f, fd]) => [f, typeof fd === 'string' ? { type: fd } : fd]);
+  const role = fields.find(([f, fd]) => fd.type === 'text' && f === 'role');
+  if (role) return 'it.role';
+  const refs = fields.filter(([, fd]) => fd.type === 'ref' && gdl.kinds[fd.ref]);
+  const catalog = refs.find(([, fd]) => (gdl.kinds[fd.ref].records || []).length && fd.ref !== 'city' && fd.ref !== 'airport');
+  if (catalog) return `it.${catalog[0]}.name`;
+  for (const [f, fd] of refs) {
+    const inner = Object.entries(gdl.kinds[fd.ref].fields || {}).find(([, x]) => x && typeof x === 'object' && x.type === 'ref' && gdl.kinds[x.ref] && (gdl.kinds[x.ref].records || []).length);
+    if (inner) return `it.${f}.${inner[0]}.name`;
+  }
+  const text = fields.find(([f, fd]) => fd.type === 'text' && /^(role|stage|type|category|genre|kind|segment)$/.test(f));
+  if (text) return `it.${text[0]}`;
+  return "'All'";
+}
+const groupWord = (expr) => expr === "'All'" ? 'group' : expr.replace(/^it\./, '').replace(/\.name$/, '').split('.').slice(-1)[0];
+
 /* ---------- recipe: make a screen much more visual ---------- */
 function recipeVisual(gdl, request) {
   const sid = targetScreen(gdl, request) || 'home';
@@ -185,12 +220,12 @@ function recipeVisual(gdl, request) {
     return { ops, notes, screen: sid };
   }
   const kind = list.kind, kd = gdl.kinds[kind] || {};
-  const groupBy = list.groupBy || (kd.fields && kd.fields.type ? 'it.type.name' : kd.fields && kd.fields.category ? 'it.category' : "'All'");
+  const groupBy = list.groupBy || naturalGroup(gdl, kind);
   const glyph = list.glyph || "'star'";
   const statusTone = list.badgeTone || null;
   const numStats = (list.stats || list.columns || []).filter(st => /num|int|money|pct|score|x/.test(st.format || '') && !/\?|'/.test(st.expr));
   const label = (kd.plural || kind).toLowerCase();
-  const ageStat = numStats.find(st => /age/i.test(st.label));
+  const ageStat = numStats.find(st => /\bage\b/i.test(st.label));
   const meters = [];
   if (statusTone) meters.push({ label: 'In service', expr: `count(group, ${statusTone.replace(/'good'/g, 'true').replace(/'warn'|'bad'|'info'/g, 'false')}) / max(1, len(group))`, format: 'pct', tone: "v < 0.8 ? 'warn' : 'good'" });
   if (ageStat) meters.push({ label: `Avg ${ageStat.label.toLowerCase()}`, expr: `round(avg(group, ${ageStat.expr}), 1)`, max: '25', format: 'num', tone: "v > 15 ? 'bad' : v > 10 ? 'warn' : 'good'" });
@@ -215,7 +250,7 @@ function recipeVisual(gdl, request) {
     { id: 'all', label: `Every ${kd.label ? kd.label.toLowerCase() : kind}`, sections: detail }
   ] });
   ops.push({ op: 'set', path: `ui.screens.${sid}.sections`, value: [] });
-  notes.push(`${navLabel(gdl, sid)}: new visual Overview — a tile per ${groupBy.replace(/^it\./, '').replace(/\./g, ' ')} with silhouettes, live status dots${meters.length ? ', ' + meters.map(m => m.label.toLowerCase()).join(' and ') + ' meters' : ''}, a capacity-mix donut${ageStat ? ' and an age histogram' : ''}. The full list moved to its own tab.`);
+  notes.push(`${navLabel(gdl, sid)}: new visual Overview — a tile per ${groupWord(groupBy)} with silhouettes, live status dots${meters.length ? ', ' + meters.map(m => m.label.toLowerCase()).join(' and ') + ' meters' : ''}, a capacity-mix donut${ageStat ? ' and an age histogram' : ''}. The full list moved to its own tab.`);
   return { ops, notes, screen: sid };
 }
 

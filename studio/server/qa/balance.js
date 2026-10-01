@@ -151,18 +151,18 @@ function suggestTuning(gdl, report, { focus, direction } = {}) {
 async function autoBalance(gdl, { iterations = 3, seeds = 2, years = 4, strategies, focus, direction, threads, onProgress } = {}) {
   const setPath = (o, p, v) => { const ks = p.split('.'); let c = o; for (const k of ks.slice(0, -1)) c = c[k]; c[ks[ks.length - 1]] = v; };
   let cur = JSON.parse(JSON.stringify(gdl));
-  const history = []; let lastReport = null;
+  const history = []; let lastReport = null; const reports = [];
   const targets = (cur.balance && cur.balance.targets) || {};
   for (let i = 0; i <= iterations; i++) {
     const rep = await run(cur, { seeds, years, strategies, threads, targets, onProgress: onProgress && ((d, n) => onProgress({ iteration: i, done: d, total: n })) });
-    lastReport = rep;
+    lastReport = rep; reports.push({ rep, params: JSON.parse(JSON.stringify(cur.params || {})) });
     // the reported direction drives the first adjustment; later iterations follow the measurements
     const tuning = i < iterations ? suggestTuning(cur, rep, { focus, direction: i === 0 ? direction : undefined }) : [];
     history.push({ iteration: i, summary: summarize(rep), findings: rep.findings, tuning });
     if (!tuning.length) break;
     for (const t of tuning) setPath(cur, t.path, t.value);
   }
-  return { gdl: cur, history, final: history[history.length - 1], lastReport };
+  return { gdl: cur, history, final: history[history.length - 1], lastReport, reports };
 }
 function summarize(rep) {
   const out = {};
@@ -178,7 +178,10 @@ function summarize(rep) {
    it on, and whether the world pushes back. Used for "the late game is too easy — analyze why". */
 function diagnose(rep, { phase = 'all' } = {}) {
   const raw = (rep.raw || []).filter(r => !r.error && r.years && r.years.length);
-  const comp = raw.filter(r => !/passive|careless/.test(r.strategy));
+  // "Too easy" is a claim about skilled play: judge on the better half of competent runs
+  const comp0 = raw.filter(r => !/passive|careless/.test(r.strategy));
+  const byFinal = comp0.slice().sort((a, b) => (b.final.value || 0) - (a.final.value || 0));
+  const comp = byFinal.slice(0, Math.max(1, Math.ceil(byFinal.length / 2)));
   const yrs = Math.max(0, ...comp.map(r => r.years.length));
   const med = (a) => median(a);
   const span = Math.max(1, Math.min(3, Math.floor(yrs / 3)));
@@ -194,7 +197,7 @@ function diagnose(rep, { phase = 'all' } = {}) {
     finalRank: med(comp.map(r => r.years[r.years.length - 1].rank)),
     topShare: comp.length ? comp.filter(r => r.years[r.years.length - 1].rank === 1).length / comp.length : 0,
     cashShare: med(comp.map(r => { const y = r.years[r.years.length - 1]; return y.value > 0 ? y.cash / y.value : null; })),
-    survival: comp.length ? comp.filter(r => r.outcome !== 'failed').length / comp.length : null,
+    survival: comp0.length ? comp0.filter(r => r.outcome !== 'failed').length / comp0.length : null,
     rivalsFailed: rep.aggregate.world.rivalsFailedMedian, entrants: rep.aggregate.world.entrantsMedian
   };
   const why = [];
@@ -204,7 +207,9 @@ function diagnose(rep, { phase = 'all' } = {}) {
   if (m.topShare >= 0.4) why.push(`Competent play finishes #1 in ${pc(m.topShare)} of runs — rivals stop being a threat.`);
   if (m.cashShare != null && m.cashShare > 0.35) why.push(`Cash piles up (${pc(m.cashShare)} of company value at the end) — there is little worth spending it on late.`);
   if (m.rivalsFailed != null && m.entrants != null && m.rivalsFailed > m.entrants + 1) why.push('More rivals die than enter: the field thins out as you grow.');
-  if (!why.length) why.push(phase === 'late' ? `The measurements show no strong late-game effect (late margin ${pc(m.lateMargin)}, late growth ×${m.lateGrowth ? m.lateGrowth.toFixed(2) : '—'}/yr); your report is treated as the signal.` : 'No strong balance problem in the measurements.');
+  const noEffect = !why.length;
+  if (comp.length < comp0.length) why.push(`(Measured on the stronger half of ${comp0.length} competent playthroughs — the late game is about skilled play.)`);
+  if (noEffect) why.unshift(phase === 'late' ? `The measurements show no strong late-game effect (late margin ${pc(m.lateMargin)}, late growth ×${m.lateGrowth ? m.lateGrowth.toFixed(2) : '—'}/yr); your report is treated as the signal.` : 'No strong balance problem in the measurements.');
   return { metrics: m, why };
 }
 module.exports = { run, aggregate, detect, suggestTuning, autoBalance, summarize, runPool, diagnose };
