@@ -76,8 +76,8 @@ class LLM {
   /* Sequential execution: local machines run one large model at a time. */
   run(fn) { const p = this.queue.then(fn, fn); this.queue = p.catch(() => {}); return p; }
   /* Structured completion with validation + repair. Returns parsed JSON. */
-  async json({ role = 'main', system, prompt, schema, temperature, maxTokens = 4096, repairs, label = 'call', useCloud = false, cache = true, onLog }) {
-    const { provider, model } = this.route(role, { useCloud });
+  async json({ role = 'main', system, prompt, schema, temperature, maxTokens = 4096, repairs, label = 'call', useCloud = false, cache = true, onLog, model: modelOverride }) {
+    const { provider, model } = this.route(role, { useCloud, model: modelOverride });
     if (!provider || !model) throw Object.assign(new Error('No local model configured. Install one on the Models page.'), { code: 'NO_MODEL' });
     const numCtx = role === 'fast' ? this.settings.context.fast : this.settings.context.main;
     const messages = [{ role: 'system', content: system }, { role: 'user', content: prompt }];
@@ -143,7 +143,7 @@ class LLM {
     for (let i = 0; i < 2; i++) {
       const t0 = Date.now();
       try {
-        const r = await this.json({ role: 'main', label: 'benchmark', cache: false, repairs: 0, system: 'You are a game designer. Reply with JSON only.', prompt: 'Design 3 core systems for a restaurant empire management game. Each needs a name and the key player decision.', schema, maxTokens: 600, onLog: null, temperature: 0.3 });
+        const r = await this.json({ role: 'main', model: model || undefined, label: 'benchmark', cache: false, repairs: 0, system: 'You are a game designer. Reply with JSON only.', prompt: 'Design 3 core systems for a restaurant empire management game. Each needs a name and the key player decision.', schema, maxTokens: 600, onLog: null, temperature: 0.3 });
         results.push({ ok: true, ms: Date.now() - t0, systems: r.systems.length });
       } catch (e) { results.push({ ok: false, ms: Date.now() - t0, error: e.message }); }
     }

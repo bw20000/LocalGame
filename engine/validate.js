@@ -9,8 +9,8 @@ const E = loadEngine();
 const X = E.expr;
 
 const OPS = new Set(['set', 'add', 'mul', 'push', 'pull', 'let', 'cash', 'resource', 'res', 'create', 'remove', 'transfer', 'project', 'negotiate', 'stake', 'stakeholder', 'remember', 'news', 'log', 'timeline', 'event', 'if', 'chance', 'each', 'forEach', 'loan', 'repay', 'forgiveDebt', 'acquireOrg', 'mergeOrg', 'moment', 'observe', 'flag', 'policy', 'stop', 'toast', 'hook', 'call', 'endGame', 'autoAct']);
-const SECTIONS = new Set(['goal', 'metrics', 'needs', 'actions', 'upcoming', 'objectives', 'table', 'cards', 'board', 'map', 'pipeline', 'chart', 'ledger', 'finance', 'rankings', 'feed', 'stakeholders', 'resources', 'world', 'policies', 'rivals', 'text', 'negotiations', 'records', 'awards', 'timeline', 'milestones', 'antiPortfolio', 'annual']);
-const ROOTS = new Set(['self', 'org', 'player', 'world', 'params', 'time', 'param', 'terms', 'fc', 'it', 'outer', 'them', 'p', 'project', 'me', 'actor', 'sold', 'demand', 'capacity', 'load', 'price', 'revenue', 'segSold', 'segDemand', 'share', 'market', 'size', 'key', 'units', 'base', 'target', 'objective', 'created', 'option', 'policy', 'failed', 'i', 'v', 'relationship', 'newcomer', 'true', 'false', 'null']);
+const SECTIONS = new Set(['goal', 'metrics', 'needs', 'actions', 'upcoming', 'objectives', 'table', 'cards', 'board', 'map', 'pipeline', 'chart', 'ledger', 'finance', 'rankings', 'feed', 'stakeholders', 'resources', 'world', 'policies', 'rivals', 'text', 'negotiations', 'records', 'awards', 'timeline', 'milestones', 'antiPortfolio', 'annual', 'showcase', 'mix', 'histogram']);
+const ROOTS = new Set(['self', 'org', 'player', 'world', 'params', 'time', 'param', 'terms', 'fc', 'it', 'outer', 'them', 'p', 'project', 'me', 'actor', 'sold', 'demand', 'capacity', 'load', 'price', 'revenue', 'segSold', 'segDemand', 'share', 'market', 'size', 'key', 'units', 'base', 'target', 'objective', 'created', 'option', 'policy', 'failed', 'i', 'v', 'relationship', 'newcomer', 'group', 'true', 'false', 'null']);
 const FIELD_TYPES = new Set(['number', 'int', 'money', 'pct', 'text', 'enum', 'ref', 'refs', 'list', 'bool']);
 
 function fnNames() { const g = { state: { orgs: {}, world: {} }, def: { kinds: {} } }; return new Set(Object.keys(E.makeEnv(g).fns)); }
@@ -104,6 +104,8 @@ function validateStatic(gdl) {
     for (const [f, d] of Object.entries(kd.derived || {})) checkExpr(typeof d === 'string' ? d : d.expr, `${base}.derived.${f}`);
     if (kd.generate) { checkExpr(kd.generate.count, `${base}.generate.count`); for (const [f, x] of Object.entries(kd.generate.set || {})) checkExpr(x, `${base}.generate.set.${f}`, new Set(['i'])); }
     for (const u of [].concat(kd.upkeep || [])) { if (typeof u === 'string') checkExpr(u, `${base}.upkeep`); else { checkExpr(u.expr, `${base}.upkeep`); if (u.when) checkExpr(u.when, `${base}.upkeep.when`); } }
+    for (const u of [].concat(kd.income || [])) { checkExpr(u.expr, `${base}.income`); if (u.when) checkExpr(u.when, `${base}.income.when`); }
+    if (kd.tick) { checkOps(kd.tick, `${base}.tick`, new Set(['self'])); if (kd.tickWhen) checkExpr(kd.tickWhen, `${base}.tickWhen`); }
     if (kd.operate) {
       const op = kd.operate;
       if (op.market && !(gdl.markets || {})[op.market]) err(`${base}.operate.market`, `Unknown market '${op.market}'`);
@@ -182,7 +184,14 @@ function validateStatic(gdl) {
   }
   for (const p of gdl.projects || []) (p.stages || []).forEach((s, i) => { checkExpr(s.duration, `projects.${p.id}.stages[${i}].duration`); if (s.cost) checkExpr(s.cost, `projects.${p.id}.stages[${i}].cost`); checkOps(s.onComplete, `projects.${p.id}.stages[${i}].onComplete`); checkOps(s.onEnter, `projects.${p.id}.stages[${i}].onEnter`); });
   for (const p of gdl.projects || []) checkOps(p.onComplete, `projects.${p.id}.onComplete`);
-  for (const n of gdl.negotiations || []) { checkExpr(n.value, `negotiations.${n.id}.value`); checkExpr(n.reservation, `negotiations.${n.id}.reservation`); checkOps(n.onAccept, `negotiations.${n.id}.onAccept`); checkOps(n.onReject, `negotiations.${n.id}.onReject`); for (const t of n.terms || []) if (typeof t.default === 'string') checkExpr(t.default, `negotiations.${n.id}.terms.${t.id}`); }
+  for (const n of gdl.negotiations || []) {
+    const ctx = new Set(Object.keys(n.context || {}));
+    for (const [k, x] of Object.entries(n.context || {})) checkExpr(x, `negotiations.${n.id}.context.${k}`);
+    checkExpr(n.value, `negotiations.${n.id}.value`, ctx); checkExpr(n.reservation, `negotiations.${n.id}.reservation`, ctx);
+    checkOps(n.onAccept, `negotiations.${n.id}.onAccept`, ctx); checkOps(n.onReject, `negotiations.${n.id}.onReject`, ctx);
+    for (const r of n.reasons || []) checkExpr(r.when, `negotiations.${n.id}.reasons`, ctx);
+    for (const t of n.terms || []) for (const x of ['default', 'min', 'max']) if (typeof t[x] === 'string') checkExpr(t[x], `negotiations.${n.id}.terms.${t.id}.${x}`, ctx);
+  }
   const pg = gdl.progression || {};
   for (const t of pg.tiers || []) if (t.when) checkExpr(t.when, `progression.tiers.${t.id}`);
   if (pg.failure) { checkExpr(pg.failure.when, 'progression.failure.when'); (pg.failure.rescue || []).forEach((r, i) => checkOps(r.effects, `progression.failure.rescue[${i}]`)); }
@@ -207,6 +216,8 @@ function validateStatic(gdl) {
       for (const c of s.columns || []) checkExpr(c.expr, p + '.columns', new Set(['it', 'v']));
       for (const m of s.items || []) checkExpr(m.expr, p + '.items', new Set(['v']));
       if (s.filter) checkExpr(s.filter, p + '.filter'); if (s.sort) checkExpr(s.sort, p + '.sort');
+      for (const m of [].concat(s.meters || [], s.type === 'showcase' ? s.stats || [] : [], s.headline ? [s.headline] : [])) checkExpr(m.expr, p + '.meters', new Set(['group', 'v']));
+      for (const x of ['groupBy', 'weight', 'expr', 'glyph', 'groupSort']) if (typeof s[x] === 'string' && (s.type === 'showcase' || s.type === 'mix' || s.type === 'histogram')) checkExpr(s[x], p + '.' + x, new Set(['group']));
     });
   }
   if (!ui.nav) warn('ui.nav', 'No navigation defined; defaults will be generated');

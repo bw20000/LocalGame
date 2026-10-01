@@ -378,6 +378,57 @@
     }).join('');
     return card(Object.assign({ title: 'Policies — what your teams do automatically' }, s), `<div class="policies">${rows}</div>`);
   };
+  /* showcase: one big visual tile per group (e.g. aircraft type) — glyph, headline number,
+     meters and stats computed over the group (`group` = the entities in that tile). */
+  S.showcase = (app, s) => {
+    const g = app.game;
+    const list = sortList(app, evalList(app, s), s);
+    const sc = g.scope();
+    const groups = new Map();
+    for (const it of list) { sc.it = it; sc.self = it; const k = String(s.groupBy ? g.ev(s.groupBy, sc) : 'All'); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
+    let entries = Array.from(groups.entries());
+    if (s.groupSort) entries = entries.map(([k, arr]) => { const gs = g.scope({ group: arr, it: arr[0], self: arr[0] }); return [k, arr, g.num(s.groupSort, gs, 0)]; }).sort((a, b) => b[2] - a[2]);
+    const tiles = entries.map(([k, arr]) => {
+      const gs = g.scope({ group: arr, it: arr[0], self: arr[0], org: g.playerOrg() });
+      const glyph = s.glyph ? g.ev(s.glyph, gs) : null;
+      const gcol = s.glyphColor ? g.ev(s.glyphColor, gs) : null;
+      const big = s.headline ? g.ev(s.headline.expr, gs) : arr.length;
+      const meters = (s.meters || []).map(m => { const v = g.num(m.expr, gs, 0); const mx = m.max != null ? g.num(m.max, gs, 1) : 1; const tone = m.tone ? toneCls(g.ev(m.tone, Object.assign(gs, { v }))) : ''; return `<div class="sc-meter"><span>${esc(m.label)}</span>${D.meter(v / (mx || 1) * 100, 100, tone)}<b>${esc(U.format(v, m.format || 'pct'))}</b></div>`; }).join('');
+      const stats = (s.stats || []).map(st => { const v = g.ev(st.expr, gs); return `<div><span>${esc(st.label)}</span><b>${esc(fmtv(v, st.format))}</b></div>`; }).join('');
+      const dots = s.dots ? `<div class="sc-dots">${arr.slice(0, 60).map(it => { const ds = g.scope({ it, self: it, org: g.playerOrg() }); const t = toneCls(g.ev(s.dots.tone || "'good'", ds)); return `<i class="${t}" data-a="inspect:${esc(entRef(it))}" title="${esc(entTitle(app, it))}"></i>`; }).join('')}${arr.length > 60 ? `<small>+${arr.length - 60}</small>` : ''}</div>` : '';
+      const title = s.title_ ? g.tpl(s.title_, gs) : k;
+      const act = (s.actions || []).map(aid => { const a = app.def.actions[aid]; return a && g.actionVisible(a, g.playerOrg(), null) ? `<button class="btn xs ghost" data-a="act:${esc(aid)}">${D.icon(a.icon || 'play')}<span>${esc(a.verb || a.label)}</span></button>` : ''; }).join('');
+      return `<div class="sc-tile">${glyph ? `<div class="sc-art" ${gcol ? `style="color:${esc(gcol)}"` : ''}>${D.glyph(glyph, null, g.num(s.glyphScale || '1', gs, 1))}</div>` : ''}<div class="sc-head"><b>${esc(title)}</b><span class="sc-big" data-tween="sc:${esc(k)}" data-value="${+big || 0}">${esc(s.headline ? fmtv(big, s.headline.format) : big)}</span>${s.headline && s.headline.label ? `<small>${esc(s.headline.label)}</small>` : ''}</div>${meters}${stats ? `<div class="sc-stats">${stats}</div>` : ''}${dots}${act ? `<div class="ecard-a">${act}</div>` : ''}</div>`;
+    }).join('');
+    return card(s, entries.length ? `<div class="showcase">${tiles}</div>` : `<div class="empty">${esc(g.tpl(s.empty || 'Nothing here yet.', g.scope()))}</div>`);
+  };
+  /* mix: composition of a list by a grouping expression, as a donut + legend (share of count or of a weight). */
+  S.mix = (app, s) => {
+    const g = app.game;
+    const list = evalList(app, s);
+    const sc = g.scope();
+    const m = new Map();
+    for (const it of list) { sc.it = it; sc.self = it; const k = String(g.ev(s.groupBy, sc)); const w = s.weight ? g.num(s.weight, sc, 0) : 1; m.set(k, (m.get(k) || 0) + w); }
+    const items = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    const total = items.reduce((a, x) => a + x[1], 0) || 1;
+    const R = 44, C = 2 * Math.PI * R; let off = 0;
+    const arcs = items.map(([k, v], i) => { const len = v / total * C; const el = `<circle r="${R}" cx="60" cy="60" fill="none" class="mix-s s${i % 6}" stroke-width="18" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"><title>${esc(k)}: ${esc(fmtv(v, s.format || 'int'))}</title></circle>`; off += len; return el; }).join('');
+    const center = s.center ? g.tpl(s.center, g.scope()) : fmtv(total, s.format || 'int');
+    const legend = items.map(([k, v], i) => `<div class="mix-l"><i class="sw s${i % 6}"></i><span>${esc(k)}</span><b>${esc(fmtv(v, s.format || 'int'))}</b><small>${Math.round(v / total * 100)}%</small></div>`).join('');
+    return card(s, items.length ? `<div class="mix"><svg viewBox="0 0 120 120" class="donut" role="img" aria-label="${esc(s.title || 'composition')}"><g transform="rotate(-90 60 60)">${arcs}</g><text x="60" y="58" text-anchor="middle" class="donut-v">${esc(center)}</text><text x="60" y="74" text-anchor="middle" class="donut-l">${esc(s.centerLabel || 'total')}</text></svg><div class="mix-legend">${legend}</div></div>` : `<div class="empty">${esc(s.empty || 'Nothing yet.')}</div>`);
+  };
+  /* histogram: distribution of a numeric expression across a list, in fixed bins, with tone per bin. */
+  S.histogram = (app, s) => {
+    const g = app.game;
+    const list = evalList(app, s);
+    const sc = g.scope();
+    const bins = s.bins || [0, 5, 10, 15, 20, 25];
+    const counts = bins.map(() => 0);
+    for (const it of list) { sc.it = it; sc.self = it; const v = g.num(s.expr, sc, 0); let i = bins.length - 1; while (i > 0 && v < bins[i]) i--; counts[i]++; }
+    const mx = Math.max(1, ...counts);
+    const cols = counts.map((c, i) => { const lab = i < bins.length - 1 ? `${bins[i]}–${bins[i + 1]}` : `${bins[i]}+`; const tone = s.tone ? toneCls(g.ev(s.tone, g.scope({ v: bins[i] }))) : ''; return `<div class="hist-c ${tone}"><b>${c || ''}</b><i style="height:${(c / mx * 100).toFixed(1)}%"></i><span>${esc(lab)}</span></div>`; }).join('');
+    return card(s, `<div class="hist">${cols}</div>${s.unit ? `<div class="hint">${esc(s.unit)}</div>` : ''}`);
+  };
   S.rivals = (app, s) => {
     const g = app.game, p = g.playerOrg();
     let orgs = g.liveOrgs().filter(o => !o.isPlayer && o.level < 3);

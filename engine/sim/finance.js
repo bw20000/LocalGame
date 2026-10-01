@@ -81,6 +81,22 @@
           }
         }
       }
+      // per-entity income (fees, commissions, royalties…) paid to the owner
+      for (const k of this.def.kindOrder) {
+        const kd = this.def.kinds[k];
+        if (!kd.income) continue;
+        for (const e of this.all(k)) {
+          if (e.owner == null) continue;
+          const org = this.state.orgs[e.owner];
+          if (!org || !org.alive || org.level === 3) continue;
+          const sc = this.scope({ self: e, org });
+          for (const u of kd.income) {
+            if (u.when && !this.ev(u.when, sc)) continue;
+            const v = this.num(u.expr, sc);
+            if (v) this.addCash(org, v, u.category || u.label || 'Income');
+          }
+        }
+      }
       // org-level costs and income (overhead, scale costs, sponsorship...)
       const tickOps = this.def.orgs.tick;
       const warm = this.state.warm;

@@ -21,14 +21,15 @@ function theme(motif, overrides = {}) {
   return Object.assign({ motif: MOTIFS[motif] ? motif : 'editorial', layout: 'sidebar', radius: motif === 'resort' ? 14 : 6, mode: m.mode, texture: m.texture || 'none', fonts: m.fonts, palette: m.palette }, overrides);
 }
 
-function cycle({ boom = 1.05, slow = 0.97, bust = 0.86, recession = true } = {}) {
+function cycle({ boom = 1.05, slow = 0.97, bust = 0.86, recession = true, perYear = 52, news = {} } = {}) {
+  const y = (weeks) => Math.max(1, Math.round(weeks * perYear / 52));
   return {
     start: 'expansion',
     phases: [
-      { id: 'expansion', label: 'Expansion', demand: boom, credit: -0.005, minTicks: '52 * 2', maxTicks: '52 * 6', next: { slowdown: 1 }, news: 'The economy is expanding; customers are spending' },
-      { id: 'slowdown', label: 'Slowdown', demand: slow, credit: 0.005, minTicks: 20, maxTicks: 70, next: { recession: recession ? 0.6 : 0, expansion: 0.4 }, news: 'Growth slows; customers grow cautious' },
-      { id: 'recession', label: 'Recession', demand: bust, credit: 0.02, minTicks: 26, maxTicks: 78, next: { recovery: 1 }, news: 'Recession: demand falls across the industry', severity: 'bad', event: recession ? 'recessionBoard' : undefined },
-      { id: 'recovery', label: 'Recovery', demand: 0.97, credit: 0.005, minTicks: 26, maxTicks: 60, next: { expansion: 1 }, news: 'Recovery: customers are coming back' }
+      { id: 'expansion', label: 'Expansion', demand: boom, credit: -0.005, minTicks: y(104), maxTicks: y(312), next: { slowdown: 1 }, news: news.expansion || 'The economy is expanding; customers are spending' },
+      { id: 'slowdown', label: 'Slowdown', demand: slow, credit: 0.005, minTicks: y(20), maxTicks: y(70), next: { recession: recession ? 0.6 : 0, expansion: 0.4 }, news: news.slowdown || 'Growth slows; customers grow cautious' },
+      { id: 'recession', label: 'Recession', demand: bust, credit: 0.02, minTicks: y(26), maxTicks: y(78), next: { recovery: 1 }, news: news.recession || 'Recession: demand falls across the industry', severity: 'bad', event: recession ? 'recessionBoard' : undefined },
+      { id: 'recovery', label: 'Recovery', demand: 0.97, credit: 0.005, minTicks: y(26), maxTicks: y(60), next: { expansion: 1 }, news: news.recovery || 'Recovery: customers are coming back' }
     ]
   };
 }
@@ -45,11 +46,11 @@ function financeActions() {
       effects: [{ op: 'repay', amount: 'param.amount' }], result: 'Repaid debt' }
   ];
 }
-function board(marginExpr = 'org.profitYear / max(1, org.revenueYear)') {
+function board(marginExpr = 'org.profitYear / max(1, org.revenueYear)', { perYear = 52, profitDriver } = {}) {
   return {
     stakeholder: { id: 'board', label: 'Board confidence', start: 60, base: '55', speed: 0.05, describe: 'Your directors and investors. Lose them and you lose the job.',
       drivers: [
-        { label: 'Profitability', expr: `time.tick < 26 ? 0 : clamp((${marginExpr} - 0.04) * 250, -25, 20)` },
+        profitDriver || { label: 'Profitability', expr: `time.tick < ${Math.round(perYear / 2)} ? 0 : clamp((${marginExpr} - 0.04) * 250, -25, 20)` },
         { label: 'Cash position', expr: 'org.cash < 0 ? -15 : 3' },
         { label: 'Growth tier', expr: 'tierIndex() * 4' }
       ], thresholds: [{ below: 25, event: 'boardUltimatum', cooldown: 26 }] },
@@ -62,10 +63,10 @@ function board(marginExpr = 'org.profitYear / max(1, org.revenueYear)') {
       ] }
   };
 }
-function failure({ unit = 'assets', sellExpr = 'player.value * 0.15' } = {}) {
+function failure({ unit = 'assets', sellExpr = 'player.value * 0.15', grace = 10, graceLabel = 'ten weeks' } = {}) {
   return {
-    when: "player.cash < -creditLimit(player) || stake('board') < 6", grace: 10, warningTitle: 'Crisis at the top',
-    warning: 'Lenders are calling and the board is meeting without you. Pick a rescue plan within ten weeks.',
+    when: "player.cash < -creditLimit(player) || stake('board') < 6", grace, warningTitle: 'Crisis at the top',
+    warning: `Lenders are calling and the board is meeting without you. Pick a rescue plan within ${graceLabel}.`,
     gameOver: 'The board has replaced you. {player.name} will carry on without you.',
     rescue: [
       { id: 'equity', label: 'Emergency equity from investors', describe: 'Raise {money(max(2000000, player.value * 0.25))}; investors take a big stake and the board loses faith.', once: true, effects: [{ op: 'cash', amount: 'max(2000000, player.value * 0.25)', category: 'Equity' }, { op: 'stake', id: 'board', add: '15' }] },

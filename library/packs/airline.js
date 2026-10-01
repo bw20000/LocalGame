@@ -63,14 +63,15 @@ function build(opts = {}) {
     currency: { symbol: '$' },
     warmup: 30,
     params: {
-      demandK: 84000, distExp: 0.7, intlFactor: 0.75, outsideBase: 0.3,
-      fareBase: 55, farePerKm: 0.075, fareLongKm: 0.05, feeBase: 1000,
-      launchCostBase: 150000, launchCostPerKm: 55, baseCost: 4000000
+      demandK: 73400, distExp: 0.7, intlFactor: 0.75, outsideBase: 0.34,
+      fareBase: 48, farePerKm: 0.075, fareLongKm: 0.05, feeBase: 1145,
+      launchCostBase: 150000, launchCostPerKm: 55, baseCost: 4000000,
+      scaleCostK: 3900, scaleCostExp: 1.3
     },
     difficulty: {
-      relaxed: { label: 'Relaxed', params: { demandK: 96000, outsideBase: 0.15 } },
+      relaxed: { label: 'Relaxed', params: { demandK: 84000, outsideBase: 0.3, fareBase: 53 } },
       normal: { label: 'Normal', params: {} },
-      cutthroat: { label: 'Cutthroat', params: { demandK: 76000, outsideBase: 0.45 } }
+      cutthroat: { label: 'Cutthroat', params: { demandK: 68000, outsideBase: 0.42 } }
     },
     finance: { baseRate: '0.045', creditLimit: 'max(15000000, org.m.value * 0.12 + org.m.revenueYear * 0.06)' },
     world: {
@@ -237,7 +238,7 @@ function build(opts = {}) {
       assets: "sum(owned('aircraft', org), it.leased ? 0 : it.value) + sum(owned('base', org), it.level * 6000000)",
       valuation: 'max(0, org.m.assets + org.cash - org.debt + max(0, org.profitYear) * 6 + org.revenueYear * 0.12)',
       costs: [
-        { label: 'Overhead & IT', expr: '60000 + org.revenue * 0.045 + 3200 * pow(org.fleet, 1.2)' },
+        { label: 'Overhead & IT', expr: '60000 + org.revenue * 0.045 + params.scaleCostK * pow(org.fleet, params.scaleCostExp)' },
         { label: 'Marketing', expr: 'org.revenue * org.mktPct' },
         { label: 'Alliance dues', expr: 'org.alliance ? 55000 : 0' },
         { label: 'Idle aircraft parking', expr: 'org.idle * 9000' }
@@ -990,8 +991,10 @@ function build(opts = {}) {
     { path: 'params.demandK', label: 'Market size', effect: 'easier', min: 50000, max: 140000 },
     { path: 'params.outsideBase', label: 'Strength of other carriers & ground transport', effect: 'harder', min: 0, max: 1.4 },
     { path: 'params.feeBase', label: 'Airport fees', effect: 'harder', min: 600, max: 2200 },
-    { path: 'params.fareBase', label: 'Base fare', effect: 'easier', min: 35, max: 90 }
-  ], targets: { smartMargin: [0.04, 0.16], passiveSurvivesYears: 1.5, carelessFailsBy: 6 } };
+    { path: 'params.fareBase', label: 'Base fare', effect: 'easier', min: 35, max: 90 },
+    { path: 'params.scaleCostK', label: 'Complexity cost of a large fleet', effect: 'harder', min: 1500, max: 12000, phase: 'late' },
+    { path: 'params.scaleCostExp', label: 'How fast complexity costs grow with size', effect: 'harder', min: 1.1, max: 1.45, phase: 'late', step: 0.04 }
+  ], targets: { smartMargin: [0.04, 0.17], maxGrowth: 12, passiveSurvivesYears: 1.5, carelessFailsBy: 6 } };
   gdl.trace = {};
   return gdl;
 }

@@ -391,7 +391,9 @@
     runOp(op, sc) {
       if (!op) return;
       const kind = op.op || Object.keys(op)[0];
-      const actor = sc.org || this.playerOrg();
+      // entity ticks of unowned entities have no actor: nothing is charged to (or announced for) the player
+      const actor = sc.org || (sc.__noActor ? null : this.playerOrg());
+      const quiet = actor ? !actor.isPlayer : !!sc.__noActor;
       switch (kind) {
         case 'set': case 'add': case 'mul': case 'push': case 'pull': {
           if (op.path) { const { obj, field } = this.resolvePathTarget(op.path, sc); this.assign(obj, field, this.ev(op.value, sc), kind); }
@@ -440,14 +442,14 @@
           this.dirty(); return;
         }
         case 'project': this.startProject(op.id, sc, op); return;
-        case 'negotiate': this.startNegotiation(op.id, this.ev(op.with || op.target, sc), actor, sc); return;
-        case 'stake': case 'stakeholder': this.addStake(op.id, this.num(op.add != null ? op.add : op.value, sc), actor); return;
+        case 'negotiate': if (!actor) return; this.startNegotiation(op.id, this.ev(op.with || op.target, sc), actor, sc); return;
+        case 'stake': case 'stakeholder': if (!actor) return; this.addStake(op.id, this.num(op.add != null ? op.add : op.value, sc), actor); return;
         case 'remember': {
           const a = op.a ? this.ev(op.a, sc) : actor, b = this.ev(op.b || op.who, sc);
           this.remember(a, b, op.key || 'relationship', this.num(op.add != null ? op.add : op.value, sc)); return;
         }
-        case 'news': if (actor && !actor.isPlayer && !op.always) return; this.news(this.tpl(op.text, sc), op.priority || 'routine', { tag: op.tag, org: (sc.org && sc.org.id), refs: op.ref ? [this.refOf(this.ev(op.ref, sc))] : this.autoRefs(sc) }); return;
-        case 'log': if (actor && !actor.isPlayer) return; this.logTransaction(this.tpl(op.text, sc), { org: actor && actor.id, amount: op.amount != null ? this.num(op.amount, sc) : null }); return;
+        case 'news': if (quiet && !op.always) return; this.news(this.tpl(op.text, sc), op.priority || 'routine', { tag: op.tag, org: (sc.org && sc.org.id), refs: op.ref ? [this.refOf(this.ev(op.ref, sc))] : this.autoRefs(sc) }); return;
+        case 'log': if (quiet) return; this.logTransaction(this.tpl(op.text, sc), { org: actor && actor.id, amount: op.amount != null ? this.num(op.amount, sc) : null }); return;
         case 'timeline': this.timeline(this.tpl(op.text, sc), op.tag || 'major'); return;
         case 'event': this.scheduleEvent(op.id, op.delay ? this.num(op.delay, sc) : 0, op.bind ? Object.fromEntries(Object.entries(op.bind).map(([k, v]) => [k, this.refOf(this.ev(v, sc))])) : this.bindFromScope(sc), actor); return;
         case 'if': { if (this.ev(op.cond || op.when, sc)) this.runOps(op.then, sc); else if (op.else) this.runOps(op.else, sc); return; }
@@ -465,18 +467,19 @@
           }
           return;
         }
-        case 'loan': this.takeLoan(actor, this.num(op.amount, sc), op.years != null ? this.num(op.years, sc) : 5, op.rate != null ? this.num(op.rate, sc) : null); return;
-        case 'repay': this.repayDebt(actor, this.num(op.amount, sc)); return;
+        case 'loan': if (!actor) return; this.takeLoan(actor, this.num(op.amount, sc), op.years != null ? this.num(op.years, sc) : 5, op.rate != null ? this.num(op.rate, sc) : null); return;
+        case 'repay': if (!actor) return; this.repayDebt(actor, this.num(op.amount, sc)); return;
         case 'forgiveDebt': this.forgiveDebt(actor, this.num(op.fraction != null ? op.fraction : 0.5, sc)); return;
         case 'acquireOrg': case 'mergeOrg': { const t = this.ev(op.target, sc); const to = op.to ? this.ev(op.to, sc) : actor; this.mergeOrgs(to, t, sc); return; }
-        case 'moment': if (actor && !actor.isPlayer && !op.always) return; this.moment(this.tpl(op.title, sc), this.tpl(op.text || '', sc), op.tone || 'good', op.stat ? this.tpl(op.stat, sc) : null); return;
+        case 'moment': if (quiet && !op.always) return; this.moment(this.tpl(op.title, sc), this.tpl(op.text || '', sc), op.tone || 'good', op.stat ? this.tpl(op.stat, sc) : null); return;
         case 'observe': { const t = this.ev(op.target, sc); if (t) this.observe(t, op.field, this.num(op.quality != null ? op.quality : 0.5, sc)); return; }
         case 'flag': this.state.flags[op.name] = op.value === undefined ? true : this.ev(op.value, sc); return;
         case 'policy': this.state.policies[op.id] = this.ev(op.value, sc); return;
         case 'stop': sc.__stop = true; return;
-        case 'toast': if (actor && !actor.isPlayer) return; this.emit('toast', { text: this.tpl(op.text, sc), tone: op.tone || 'info' }); return;
+        case 'toast': if (quiet) return; this.emit('toast', { text: this.tpl(op.text, sc), tone: op.tone || 'info' }); return;
         case 'hook': case 'call': if (this.hooks) this.hooks.run(op.hook || op.name, sc, op.args); return;
         case 'autoAct': {
+          if (!actor) return;
           // delegation: the org's staff take an action using its ai.score (same logic rivals use)
           const n = op.max != null ? Math.max(0, Math.round(this.num(op.max, sc, 1))) : 1;
           const min = op.minScore != null ? this.num(op.minScore, sc, 0) : 0;
@@ -507,6 +510,25 @@
       m[key] = U.clamp((m[key] || 0) + delta, -100, 100);
     }
 
+    /* Per-entity tick ops (kinds.x.tick, optional tickEvery / tickWhen): startups growing, shows
+       aging, clients' careers… Runs for every entity of the kind, owned or not. */
+    runEntityTicks() {
+      const t = this.state.tick;
+      for (const k of this.def.kindOrder) {
+        const kd = this.def.kinds[k];
+        if (!kd.tick || !kd.tick.length) continue;
+        const every = kd.tickEvery || 1;
+        if (t % every !== 0) continue;
+        for (const e of this.all(k).slice()) {
+          if (!this.ent(k, e.id)) continue;
+          const org = e.owner != null ? this.state.orgs[e.owner] : null;
+          if (org && (!org.alive || org.level === 3) && !kd.tickBackground) continue;
+          const sc = this.scope({ self: e, org: org || null, __noActor: true });
+          if (kd.tickWhen && !this.ev(kd.tickWhen, sc)) continue;
+          this.runOps(kd.tick, sc);
+        }
+      }
+    }
     /* ----- tick orchestration ----- */
     tick() {
       const st = this.state;
@@ -516,6 +538,7 @@
       const steps = [
         ['world', () => this.updateWorld()],
         ['derived', () => this.computeDerived()],
+        ['entities', () => this.runEntityTicks()],
         ['policies', () => this.applyPolicies()],
         ['ai', () => !this.opts.noAI && this.runAI()],
         ['projects', () => this.progressProjects()],
