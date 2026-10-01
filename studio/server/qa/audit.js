@@ -53,7 +53,7 @@ function designReview({ gdl, balance, browser, trace, brief }) {
   // fantasy
   const musts = (trace || []).filter(t => t.kind === 'must');
   const impl = musts.filter(t => t.status === 'implemented').length;
-  r('Fantasy', domainActs.length >= 8 && (!musts.length || impl / musts.length > 0.85) ? 'pass' : 'concern', [`${domainActs.length}/${acts.length} player actions operate on domain objects (${kinds.slice(0, 6).join(', ')}…)`, `${impl}/${musts.length} must-haves implemented`, brief ? `Role: ${brief.role}` : ''].filter(Boolean), 'Every main screen should be a decision the role actually makes.');
+  r('Fantasy', (domainActs.length >= 8 || domainActs.length / Math.max(1, acts.length) >= 0.6) && (!musts.length || impl / musts.length > 0.85) ? 'pass' : 'concern', [`${domainActs.length}/${acts.length} player actions operate on domain objects (${kinds.slice(0, 6).join(', ')}…)`, `${impl}/${musts.length} must-haves implemented`, brief ? `Role: ${brief.role}` : ''].filter(Boolean), 'Every main screen should be a decision the role actually makes.');
   // 10 minutes
   const ob = gdl.onboarding || {};
   const firstActs = acts.filter(a => a.primary).length;
@@ -77,7 +77,7 @@ function designReview({ gdl, balance, browser, trace, brief }) {
   // screenshot
   const motif = gdl.theme && gdl.theme.motif;
   const home = ((gdl.ui || {}).screens || {}).home || {};
-  const sig = (home.sections || []).find(s => /map|board|showcase/.test(s.type));
+  const sig = (home.sections || []).find(s => /map|board|showcase/.test(s.type) || (s.type === 'cards' && s.glyph));
   r('Screenshot', motif && motif !== 'editorial' && sig ? 'pass' : 'concern', [`Motif: ${motif || 'none'}`, sig ? `Signature panel on home: ${sig.type} “${sig.title || ''}”` : 'No signature visual on the home screen', browser && !browser.skipped ? `${browser.screenshots.length} screenshots captured` : ''].filter(Boolean));
   // redundancy
   const scr = browser && !browser.skipped ? browser.metrics.screens : {};

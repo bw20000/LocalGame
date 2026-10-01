@@ -77,6 +77,8 @@ function placeholders(gdl, customFiles = []) {
     else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (k === 'records') continue; walk(v, p ? `${p}.${k}` : k); }
   };
   walk(gdl, '');
+  const ext = JSON.stringify(gdl).match(/https?:\/\/[^"'\s)]+/g) || [];
+  if (ext.length) F.push({ id: 'external-url', severity: 'major', area: 'locality', text: `The game definition references external URLs (${[...new Set(ext)].slice(0, 3).join(', ')}) — a standalone game must work offline.`, fix: 'Inline the asset or remove the reference.' });
   for (const c of customFiles) if (re.test(c.code)) F.push({ id: 'placeholder', severity: 'major', area: 'completeness', text: `Placeholder in custom code ${c.name}`, fix: 'Implement or remove.' });
   // buttons with no action: screen actions referencing actions without effects
   for (const a of arr(gdl.actions)) if (!a.aiOnly && !(a.effects || []).length) F.push({ id: 'dead-button', severity: 'major', area: 'completeness', text: `Action “${a.label}” has no effects.`, fix: 'Give it effects or remove it.' });

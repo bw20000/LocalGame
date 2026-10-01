@@ -8,22 +8,22 @@ const path = require('path');
 const C = require('../common');
 
 const LEX = {
-  restaurant: { title: 'Mise en Place', tagline: 'From one dining room to a restaurant empire.', org: 'Restaurant group', orgs: 'Restaurant groups', unit: 'restaurant', units: 'restaurants', capUnit: 'covers', priceLabel: 'Average check', talent: 'chef', talents: 'chefs', motif: 'menu-card', glyph: 'dish', award: 'Restaurant of the Year', critic: 'food critic', rating: 'Critic rating',
+  restaurant: { demandMult: 1, startCash: 6000000, title: 'Mise en Place', tagline: 'From one dining room to a restaurant empire.', org: 'Restaurant group', orgs: 'Restaurant groups', unit: 'restaurant', units: 'restaurants', capUnit: 'covers', priceLabel: 'Average check', talent: 'chef', talents: 'chefs', motif: 'menu-card', glyph: 'dish', award: 'Restaurant of the Year', critic: 'food critic', rating: 'Critic rating',
     concepts: [['bistro', 'Neighborhood bistro', 48, 62, 1300, 0.32], ['fastcasual', 'Fast casual', 19, 46, 3600, 0.28], ['steak', 'Steakhouse', 88, 70, 950, 0.36], ['noodle', 'Noodle bar', 24, 56, 2600, 0.27], ['seafood', 'Seafood brasserie', 72, 68, 1050, 0.35], ['tasting', 'Tasting-menu restaurant', 230, 90, 380, 0.4]],
     rivals: ['Copper Pot Hospitality', 'Saltgrass Group', 'Maison Verde', 'Harbor & Vine', 'Lantern Kitchens', 'Ember Collective'], verbs: ['Open a hot new concept', 'Earn a star', 'Poach a great chef', 'Survive a bad review', 'Build a group across cities'] },
-  'hotel-resort': { title: 'Grand Arrival', tagline: 'Build a hospitality empire, one property at a time.', org: 'Hospitality group', orgs: 'Hospitality groups', unit: 'hotel', units: 'hotels', capUnit: 'room-nights', priceLabel: 'Average daily rate', talent: 'general manager', talents: 'general managers', motif: 'resort', glyph: 'building', award: 'Hotel Group of the Year', critic: 'travel critic', rating: 'Guest score',
+  'hotel-resort': { demandMult: 0.9, startCash: 30000000, title: 'Grand Arrival', tagline: 'Build a hospitality empire, one property at a time.', org: 'Hospitality group', orgs: 'Hospitality groups', unit: 'hotel', units: 'hotels', capUnit: 'room-nights', priceLabel: 'Average daily rate', talent: 'general manager', talents: 'general managers', motif: 'resort', glyph: 'building', award: 'Hotel Group of the Year', critic: 'travel critic', rating: 'Guest score',
     concepts: [['budget', 'Budget hotel', 95, 48, 1500, 0.3], ['business', 'Business hotel', 185, 63, 1100, 0.33], ['boutique', 'Boutique hotel', 290, 76, 500, 0.35], ['resort', 'Luxury resort', 520, 88, 650, 0.38]],
     rivals: ['Meridian Hotels', 'Coral & Pine Resorts', 'Atlas Stays', 'Juniper Hospitality', 'Solace Hotels'], verbs: ['Open a landmark resort', 'Rebrand a tired property', 'Dominate a destination', 'Acquire a rival chain'] },
-  'theme-park': { title: 'Thrill Republic', tagline: 'Build parks people cross the world to visit.', org: 'Park company', orgs: 'Park companies', unit: 'park', units: 'parks', capUnit: 'visits', priceLabel: 'Ticket price', talent: 'creative director', talents: 'creative directors', motif: 'resort', glyph: 'star', award: 'Park of the Year', critic: 'enthusiast press', rating: 'Guest rating',
+  'theme-park': { demandMult: 9, startCash: 90000000, title: 'Thrill Republic', tagline: 'Build parks people cross the world to visit.', org: 'Park company', orgs: 'Park companies', unit: 'park', units: 'parks', capUnit: 'visits', priceLabel: 'Ticket price', talent: 'creative director', talents: 'creative directors', motif: 'resort', glyph: 'star', award: 'Park of the Year', critic: 'enthusiast press', rating: 'Guest rating',
     concepts: [['family', 'Family park', 62, 60, 26000, 0.34], ['thrill', 'Thrill park', 78, 68, 22000, 0.36], ['water', 'Water park', 48, 55, 18000, 0.3], ['immersive', 'Immersive themed resort', 135, 85, 30000, 0.4]],
     rivals: ['Wonderland Parks', 'Apex Coaster Co.', 'Lagoon Leisure', 'Starfall Resorts'], verbs: ['Build a record-breaking coaster', 'Open a new park', 'License a beloved story world', 'Survive a ride accident'] },
-  casino: { title: 'House Edge', tagline: 'Every resort tells a story. The house always tells it last.', org: 'Casino company', orgs: 'Casino companies', unit: 'casino', units: 'casinos', capUnit: 'guest visits', priceLabel: 'Spend per visit', talent: 'property president', talents: 'property presidents', motif: 'resort', glyph: 'star', award: 'Casino Resort of the Year', critic: 'gaming press', rating: 'Guest rating',
+  casino: { demandMult: 6, startCash: 160000000, title: 'House Edge', tagline: 'Every resort tells a story. The house always tells it last.', org: 'Casino company', orgs: 'Casino companies', unit: 'casino', units: 'casinos', capUnit: 'guest visits', priceLabel: 'Spend per visit', talent: 'property president', talents: 'property presidents', motif: 'resort', glyph: 'star', award: 'Casino Resort of the Year', critic: 'gaming press', rating: 'Guest rating',
     concepts: [['locals', 'Locals casino', 70, 52, 30000, 0.55], ['strip', 'Destination resort', 160, 72, 26000, 0.58], ['integrated', 'Integrated luxury resort', 320, 88, 20000, 0.6]],
     rivals: ['Golden Oasis', 'Neon Crown', 'Marina Bay Gaming', 'Desert Rose'], verbs: ['Open a megaresort', 'Court high rollers', 'Win a license in a new market'] },
-  'hospital-system': { title: 'Bedside', tagline: 'Better care, fuller wards, a system people trust.', org: 'Health system', orgs: 'Health systems', unit: 'hospital', units: 'hospitals', capUnit: 'patient visits', priceLabel: 'Average reimbursement', talent: 'chief of medicine', talents: 'chiefs of medicine', motif: 'blueprint', glyph: 'building', award: 'Health System of the Year', critic: 'quality inspector', rating: 'Quality rating',
+  'hospital-system': { demandMult: 1.4, startCash: 45000000, title: 'Bedside', tagline: 'Better care, fuller wards, a system people trust.', org: 'Health system', orgs: 'Health systems', unit: 'hospital', units: 'hospitals', capUnit: 'patient visits', priceLabel: 'Average reimbursement', talent: 'chief of medicine', talents: 'chiefs of medicine', motif: 'blueprint', glyph: 'building', award: 'Health System of the Year', critic: 'quality inspector', rating: 'Quality rating',
     concepts: [['urgent', 'Urgent-care clinic', 180, 50, 1800, 0.45], ['community', 'Community hospital', 950, 60, 1300, 0.52], ['specialty', 'Specialty center', 2600, 74, 520, 0.5], ['academic', 'Academic medical center', 3800, 88, 900, 0.55]],
     rivals: ['Mercy Ridge Health', 'Northshore Medical', 'Summit Care Partners', 'Riverside Health Alliance', 'Beacon Health'], verbs: ['Open a hospital where care is missing', 'Recruit a famous surgeon', 'Earn the top quality rating', 'Build a regional system'] },
-  generic: { title: 'Main Street Empire', tagline: 'Open, grow and outlast your rivals.', org: 'Company', orgs: 'Companies', unit: 'location', units: 'locations', capUnit: 'customers', priceLabel: 'Average sale', talent: 'manager', talents: 'managers', motif: 'editorial', glyph: 'building', award: 'Company of the Year', critic: 'critic', rating: 'Rating',
+  generic: { demandMult: 1, startCash: 6000000, title: 'Main Street Empire', tagline: 'Open, grow and outlast your rivals.', org: 'Company', orgs: 'Companies', unit: 'location', units: 'locations', capUnit: 'customers', priceLabel: 'Average sale', talent: 'manager', talents: 'managers', motif: 'editorial', glyph: 'building', award: 'Company of the Year', critic: 'critic', rating: 'Rating',
     concepts: [['value', 'Value format', 25, 45, 4000, 0.4], ['standard', 'Standard format', 45, 60, 2500, 0.38], ['premium', 'Premium format', 95, 78, 1200, 0.36]],
     rivals: ['Atlas Group', 'Summit Holdings', 'Cardinal & Co.', 'Northstar Retail'], verbs: ['Open new locations', 'Out-compete rivals', 'Build a national brand'] }
 };
@@ -48,7 +48,7 @@ function build(opts = {}) {
       disclaimer: 'Cities are real places with approximate, rounded figures. Every company, person, critic and event is fictional.',
       goal: `Grow {player.name} from a single ${L.unit} into a celebrated ${L.org.toLowerCase()}.` },
     time: { unit: 'week', start: '2026-01-05' }, currency: { symbol: '$' }, warmup: 20,
-    params: { demandK: 2.4, priceSens: 1, rentBase: 2200, wageBase: 1150 },
+    params: { demandK: 2.4 * (L.demandMult || 1), priceSens: 1, rentBase: 2200, wageBase: 1150 },
     world: {
       seasonality: genre === 'theme-park' ? [0.4, 0.45, 0.7, 0.9, 1.05, 1.4, 1.6, 1.55, 1.0, 0.85, 0.6, 0.7] : [0.9, 0.88, 0.97, 1.0, 1.03, 1.06, 1.1, 1.08, 1.0, 1.0, 0.98, 1.1],
       cycle: C.cycle({ recession: f.recessions }),
@@ -100,7 +100,7 @@ function build(opts = {}) {
     },
     orgs: {
       label: L.org, plural: L.orgs,
-      fields: { priceLevel: { type: 'number', default: 1 }, staffing: { type: 'number', default: 1 }, mktPct: { type: 'number', default: 0.03 }, costDiscipline: { type: 'number', default: 0 }, closedForStrike: { type: 'number', default: 0 }, homeCode: { type: 'text', default: 'AUS' } },
+      fields: { priceLevel: { type: 'number', default: 1 }, staffing: { type: 'number', default: 1 }, mktPct: { type: 'number', default: 0.03 }, costDiscipline: { type: 'number', default: 0 }, closedForStrike: { type: 'number', default: 0 }, safety: { type: 'number', default: 1 }, homeCode: { type: 'text', default: 'AUS' } },
       metrics: [
         { id: 'units', label: L.units[0].toUpperCase() + L.units.slice(1), expr: "count(owned('venue', org))", format: 'int' },
         { id: 'cities', label: 'Cities', expr: "len(distinct(map(owned('venue', org), it.city)))", format: 'int' },
@@ -114,14 +114,14 @@ function build(opts = {}) {
       ],
       assets: "count(owned('venue', org)) * 1500000",
       tick: [{ op: 'set', path: 'org.closedForStrike', value: 'max(0, org.closedForStrike - 1)' }],
-      costs: [{ label: 'Head office', expr: '25000 + org.revenue * 0.04 + 2500 * pow(org.units, 1.15)' }, { label: 'Marketing', expr: 'org.revenue * org.mktPct' }],
-      player: { name: L.unit === 'restaurant' ? 'Saffron & Salt' : 'Juniper ' + (L.org.split(' ')[0]), cash: '6000000',
+      costs: [{ label: 'Head office', expr: '25000 + org.revenue * 0.04 + 2500 * pow(org.units, 1.15)' }, { label: 'Marketing', expr: 'org.revenue * org.mktPct' }, { label: 'Safety & maintenance', expr: 'org.revenue * 0.012 * org.safety' }],
+      player: { name: L.unit === 'restaurant' ? 'Saffron & Salt' : 'Juniper ' + (L.org.split(' ')[0]), cash: String(L.startCash || 6e6),
         start: [{ op: 'create', kind: 'venue', set: { city: 'org.homeCode', concept: `'${concepts[0].id}'`, opened: '-52', quality: '62', rating: '60' } }] },
       rivals: { count: { full: 4, light: 4, background: 12 }, aiEvery: 4, entryChance: '0.4', maxActive: 12, failGrace: 16, fixed: L.rivals.slice(0, 8).map((n, i) => ({ name: n, archetype: ['chain', 'boutique', 'chain', 'boutique'][i % 4] })),
         archetypes: [
-          { id: 'chain', label: 'Fast-growing chain', risk: 0.6, tempo: 2, color: '#b5651d', cash: '40000000', set: { priceLevel: '0.92', mktPct: '0.04' }, policies: { pricing: 'value', staffing: 'lean' }, weights: { openVenue: 1.6, closeVenue: 1 },
+          { id: 'chain', label: 'Fast-growing chain', risk: 0.6, tempo: 2, color: '#b5651d', cash: String(Math.round((L.startCash || 6e6) * 6.7)), set: { priceLevel: '0.92', mktPct: '0.04' }, policies: { pricing: 'value', staffing: 'lean' }, weights: { openVenue: 1.6, closeVenue: 1 },
             start: [{ op: 'create', kind: 'venue', count: 'randInt(3, 6)', set: { city: "pick(all('city')).id", concept: "pick(all('concept')).id", opened: '-randInt(10, 300)' } }] },
-          { id: 'boutique', label: 'Prestige operator', risk: 0.4, tempo: 1, color: '#5b3a8c', cash: '25000000', set: { priceLevel: '1.08', mktPct: '0.03' }, policies: { pricing: 'premium', staffing: 'generous' }, weights: { openVenue: 1, hireTalent: 1.4 },
+          { id: 'boutique', label: 'Prestige operator', risk: 0.4, tempo: 1, color: '#5b3a8c', cash: String(Math.round((L.startCash || 6e6) * 4.2)), set: { priceLevel: '1.08', mktPct: '0.03' }, policies: { pricing: 'premium', staffing: 'generous' }, weights: { openVenue: 1, hireTalent: 1.4 },
             start: [{ op: 'create', kind: 'venue', count: 'randInt(2, 4)', set: { city: "pick(all('city')).id", concept: `'${concepts[concepts.length - 1].id}'`, opened: '-randInt(10, 300)', quality: '75' } }] }
         ] }
     },
@@ -131,6 +131,8 @@ function build(opts = {}) {
   gdl.policies = [
     { id: 'pricing', label: 'Pricing stance', scope: 'org', default: 'standard', describe: 'Group-wide price positioning.', options: [{ value: 'value', label: 'Value', describe: '−10% prices, more volume', effects: [{ op: 'set', path: 'org.priceLevel', value: '0.9' }] }, { value: 'standard', label: 'Market', effects: [{ op: 'set', path: 'org.priceLevel', value: '1' }] }, { value: 'premium', label: 'Premium', describe: '+12% prices; needs quality to justify it', effects: [{ op: 'set', path: 'org.priceLevel', value: '1.12' }] }] },
     { id: 'staffing', label: 'Staffing levels', scope: 'org', default: 'standard', describe: 'More staff raises quality and wage costs.', options: [{ value: 'lean', label: 'Lean', effects: [{ op: 'set', path: 'org.staffing', value: '0.85' }] }, { value: 'standard', label: 'Standard', effects: [{ op: 'set', path: 'org.staffing', value: '1' }] }, { value: 'generous', label: 'Generous', effects: [{ op: 'set', path: 'org.staffing', value: '1.18' }] }] },
+    { id: 'safety', label: 'Safety & maintenance standards', scope: 'org', default: 'standard', describe: 'Inspections, maintenance and crowd control across every location.',
+      options: [{ value: 'lean', label: 'Lean', describe: 'Cheaper; incidents become likely.', effects: [{ op: 'set', path: 'org.safety', value: '0.6' }] }, { value: 'standard', label: 'Standard', effects: [{ op: 'set', path: 'org.safety', value: '1' }] }, { value: 'rigorous', label: 'Rigorous', describe: 'Costs more; guests and regulators trust you.', effects: [{ op: 'set', path: 'org.safety', value: '1.5' }] }] },
     { id: 'marketing', label: 'Marketing budget', scope: 'org', default: 'standard', options: [{ value: 'low', label: 'Lean (1.5%)', effects: [{ op: 'set', path: 'org.mktPct', value: '0.015' }] }, { value: 'standard', label: 'Standard (3%)', effects: [{ op: 'set', path: 'org.mktPct', value: '0.03' }] }, { value: 'heavy', label: 'Heavy (6%)', effects: [{ op: 'set', path: 'org.mktPct', value: '0.06' }] }] }
   ];
   const b = C.board();
@@ -148,7 +150,7 @@ function build(opts = {}) {
       effects: [{ op: 'create', kind: 'venue', set: { city: 'param.city', concept: 'param.concept', sizeMult: '+param.size', quality: 'param.concept.quality * 0.9', rating: '58', buzz: '1.4', opened: 'time.tick', renovated: 'time.tick' }, as: 'v' }, { op: 'news', text: `New ${L.unit}: {v.name} opens in {param.city.name}` }],
       result: 'Opened {v.name} ({param.concept.name}) in {param.city.name}',
       ai: { score: 'fc.profit * 40 - param.concept.price * param.concept.cap * 32 * param.size * param.city.rent * 0.3', candidates: 3, news: '{org.name} opens a {param.concept.name} in {param.city.name}' } },
-    { id: 'setVenuePrice', label: 'Set price level', verb: 'Reprice', kind: 'venue', category: 'operate', icon: 'tag',
+    { id: 'setVenuePrice', label: 'Set price level', verb: 'Reprice', kind: 'venue', category: 'operate', icon: 'tag', tradeoff: 'Higher prices mean fewer, richer customers; discounts fill seats at thinner margins.',
       params: [{ id: 'mult', label: L.priceLabel, type: 'choice', default: 'self.priceMult', options: [{ value: 0.85, label: '−15%' }, { value: 0.93, label: '−7%' }, { value: 1, label: 'List' }, { value: 1.08, label: '+8%' }, { value: 1.18, label: '+18%' }, { value: 1.3, label: '+30%' }] }],
       forecast: { kind: 'venue', exclude: 'self', set: { city: 'self.city', concept: 'self.concept', sizeMult: 'self.sizeMult', quality: 'self.quality', rating: 'self.rating', buzz: 'self.buzz', priceMult: '+param.mult', opened: 'self.opened', renovated: 'self.renovated', chefSkill: 'self.chefSkill', age: 'self.age' } },
       preview: [{ label: L.priceLabel, expr: 'self.concept.price * param.mult * org.priceLevel', format: 'money' }, { label: 'Expected utilization', expr: 'fc.load', format: 'pct' }, { label: 'Expected contribution / week', expr: 'fc.profit', format: 'signedMoney' }],
@@ -156,13 +158,13 @@ function build(opts = {}) {
     { id: 'renovate', label: 'Renovate', verb: 'Renovate', kind: 'venue', category: 'operate', icon: 'wrench', describe: 'Refresh the space: quality and buzz jump, and the place feels new again.', tradeoff: 'Costs cash and a few slow weeks.',
       cost: { cash: 'self.concept.price * self.concept.cap * 10 * self.sizeMult' }, capex: true, cooldown: 52,
       effects: [{ op: 'add', path: 'self.quality', value: '8' }, { op: 'set', path: 'self.buzz', value: 'self.buzz + 0.5' }, { op: 'set', path: 'self.renovated', value: 'time.tick' }], result: '{self.name} renovated' },
-    { id: 'closeVenue', label: `Close ${L.unit}`, verb: 'Close', kind: 'venue', category: 'operate', icon: 'close', danger: true, describe: 'Stop the losses. Staff and customers will remember.', cost: { cash: 'self.concept.price * self.concept.cap * 3' },
+    { id: 'closeVenue', label: `Close ${L.unit}`, verb: 'Close', kind: 'venue', category: 'operate', icon: 'close', danger: true, describe: 'Stop the losses. Staff and customers will remember.', tradeoff: 'Ends the losses — and any chance of a turnaround; your foothold in that city goes to rivals.', cost: { cash: 'self.concept.price * self.concept.cap * 3' },
       effects: [{ op: 'each', list: "refs('talent', 'venue', self)", do: [{ op: 'set', path: 'it.venue', value: 'null' }, { op: 'set', path: 'it.owner', value: 'null' }] }, { op: 'resource', id: 'reputation', add: '-1' }, { op: 'news', text: '{self.name} closes its doors' }, { op: 'remove', target: 'self' }],
       result: 'Closed {self.name}', ai: { score: "time.tick - self.opened > 40 && avg(self._hp ?? [], it) < 0 ? 1000000 : 0", selfSample: 6, news: '{org.name} closes {self.name}' } },
-    { id: 'marketingPush', label: 'Launch a marketing push', verb: 'Promote', kind: 'venue', category: 'operate', icon: 'megaphone', describe: 'Press, social and partnerships for one location.', cost: { cash: 'self.concept.price * self.concept.cap * 1.2' }, cooldown: 8,
+    { id: 'marketingPush', label: 'Launch a marketing push', verb: 'Promote', kind: 'venue', category: 'operate', icon: 'megaphone', describe: 'Press, social and partnerships for one location.', tradeoff: 'Cash now for buzz that fades within weeks.', cost: { cash: 'self.concept.price * self.concept.cap * 1.2' }, cooldown: 8,
       effects: [{ op: 'set', path: 'self.buzz', value: 'self.buzz + 0.6' }], result: 'Marketing push for {self.name}' }
   ];
-  if (f.talent) gdl.actions.push({ id: 'hireTalent', label: `Hire a ${L.talent}`, verb: 'Hire', category: 'people', icon: 'user', describe: `Great ${L.talents} lift quality; skill shown is an estimate until they work for you.`, tradeoff: 'Salaries add up; stars get poached.',
+  if (f.talent) gdl.actions.push({ id: 'hireTalent', label: `Hire a ${L.talent}`, verb: 'Hire', category: 'people', icon: 'user', primary: true, describe: `Great ${L.talents} lift quality; skill shown is an estimate until they work for you.`, tradeoff: 'Salaries add up; stars get poached.',
     params: [{ id: 'person', label: L.talent[0].toUpperCase() + L.talent.slice(1), type: 'entity', kind: 'talent', filter: '!it.venue', sort: 'it.skill' }, { id: 'venue', label: `For which ${L.unit}`, type: 'entity', kind: 'venue', filter: "it.owner == org && count(refs('talent', 'venue', it)) == 0", sort: 'it._rev' }],
     cost: { cash: 'param.person.salary * 0.15' }, costCategory: 'Hiring',
     preview: [{ label: 'Salary / year', expr: 'param.person.salary', format: 'money' }, { label: 'Skill (estimated)', expr: 'est(param.person, "skill").value', format: 'score' }, { label: 'Age', expr: 'param.person.age', format: 'int' }],
@@ -201,6 +203,10 @@ function build(opts = {}) {
     { id: 'rivalNextDoor', priority: 'important', chance: '0.03', cooldown: 16, title: '{rv.owner.name} opens next to {v.name}', text: 'A new {rv.concept.name} is targeting your customers in {v.city.name}.',
       bind: { v: { kind: 'venue', owner: 'player' }, rv: { kind: 'venue', owner: 'rival', filter: 'it.city == v.city && time.tick - it.opened < 8' } },
       choices: [{ label: 'Launch a promotion', cost: 'v.concept.price * v.concept.cap * 0.8', effects: [{ op: 'add', path: 'v.buzz', value: '0.5' }], result: 'Promotion launched at {v.name}' }, { label: 'Trust your quality', effects: [], result: 'You hold steady' }] },
+    { id: 'incident', priority: 'critical', chance: '0.008 / max(0.4, player.safety)', cooldown: 26, title: `Incident at {v.name}`, text: `${genre === 'theme-park' ? 'A ride malfunction' : genre === 'hospital-system' ? 'A patient-safety failure' : 'An accident'} at {v.name} — {v._load > 0.95 ? 'the place was packed beyond comfort' : 'investigators are on site'}. The press is calling.`,
+      bind: { v: { kind: 'venue', owner: 'player', pick: 'max', by: 'it._load - it.quality / 200' } },
+      choices: [{ label: 'Close it for a full review', describe: 'Weeks of lost sales; trust preserved.', cost: 'v.concept.price * v.concept.cap * 2', effects: [{ op: 'add', path: 'v.quality', value: '4' }, { op: 'resource', id: 'reputation', add: '-1' }, { op: 'policy', id: 'safety', value: "'rigorous'" }], result: 'You close {v.name} for review' },
+        { label: 'Fix it quietly and reopen', describe: 'Cheaper — unless it happens again.', effects: [{ op: 'resource', id: 'reputation', add: '-6' }, { op: 'add', path: 'v.buzz', value: '-0.5' }], result: '{v.name} reopens after quick repairs' }] },
     { id: 'viralMoment', priority: 'routine', chance: '0.02', cooldown: 10, title: '{v.name} goes viral', bind: { v: { kind: 'venue', owner: 'player', filter: 'it.quality > 65' } }, effects: [{ op: 'add', path: 'v.buzz', value: '0.8' }], news: '{v.name} goes viral — lines around the block' }
   );
   gdl.progression = {
@@ -213,7 +219,7 @@ function build(opts = {}) {
   gdl.history.milestones.push({ id: 'second', label: `A second ${L.unit}`, when: 'player.units >= 2', text: 'You are no longer a one-location wonder.' }, { id: 'rating90', label: 'Rave reviews', when: "maxOf(owned('venue'), it.rating) >= 90", text: `One of your ${L.units} is the talk of the trade.` }, { id: 'ten', label: `Ten ${L.units}`, when: 'player.units >= 10', text: 'A real group now.' });
   gdl.needs = [
     { id: 'losing', forEach: 'venue', when: 'time.tick - self.opened > 8 && self._profit < 0', text: '{self.name} is losing {money(-self._profit)} a week', sub: '{self._load < 0.5 ? "Half empty: reprice or promote" : "Costs too high for its sales"}', action: 'setVenuePrice', priority: 1, tone: 'bad' },
-    { id: 'full', forEach: 'venue', when: 'self._load > 0.97', text: '{self.name} is turning customers away', sub: 'Raise prices or open another nearby', action: 'setVenuePrice', priority: 1, tone: 'good' },
+    { id: 'full', forEach: 'venue', when: 'self._load > 0.97', text: '{self.name} is turning customers away', sub: 'Overcrowding hurts the experience and safety — raise prices or open another nearby', action: 'setVenuePrice', priority: 1, tone: 'good' },
     { id: 'nochef', forEach: 'venue', when: f.talent ? "count(refs('talent', 'venue', self)) == 0 && time.tick > 2" : 'false', text: `{self.name} has no ${L.talent}`, sub: 'Quality drifts down without one', action: 'hireTalent', priority: 1, tone: 'warn' }
   ];
   const scr = C.standardScreens({
@@ -230,7 +236,7 @@ function build(opts = {}) {
     nav: [{ id: 'home', label: 'Overview', icon: 'home' }, { id: 'locations', label: L.units[0].toUpperCase() + L.units.slice(1), icon: 'map' }].concat(f.talent ? [{ id: 'people', label: L.talents[0].toUpperCase() + L.talents.slice(1), icon: 'users' }] : [], [{ id: 'company', label: 'Company', icon: 'bank' }, { id: 'industry', label: 'Industry', icon: 'globe' }]),
     screens: scr };
   gdl.theme = C.theme(L.motif, { logo: { text: title.split(/\s+/).map(w => w[0]).join('').slice(0, 2) } });
-  gdl.onboarding = C.onboarding({ title: 'Welcome, ' + (opts.role || 'founder'), text: `{player.name} is a single ${L.unit} in {get('city', player.homeCode).name} with $6M in the bank. The board wants a group.`,
+  gdl.onboarding = C.onboarding({ title: 'Welcome, ' + (opts.role || 'founder'), text: `{player.name} is a single ${L.unit} in {get('city', player.homeCode).name} with ${'$' + Math.round((L.startCash || 6e6) / 1e6) + 'M'} in the bank. The board wants a group.`,
     bullets: [{ icon: 'building', title: 'Every location is a bet', text: `Pick cities and concepts; each ${L.unit} competes with the others in town.` }, { icon: 'users', title: 'Talent matters', text: `Great ${L.talents} raise quality — and get poached.` }, { icon: 'alert', title: 'The world pushes back', text: 'Critics, inspectors, cost spikes, recessions and rivals.' }],
     primaryAction: { id: 'openVenue', label: `Open a ${L.unit}` }, primaryNav: 'locations', unitNoun: L.units });
   gdl.newGame = { options: [{ id: 'name', label: 'Company name', type: 'text', default: gdl.orgs.player.name }, { id: 'home', label: 'Home city', type: 'choice', default: 'AUS', choices: homes.map(h => ({ value: h, label: (cities().find(c => c.id === h) || { name: h }).name, effects: [{ op: 'set', path: 'org.homeCode', value: `'${h}'` }] })) }] };
@@ -245,6 +251,7 @@ const FEATURES = [
   { id: 'concepts', label: 'Concepts with distinct economics', keywords: ['concept', 'concepts', 'menu', 'format', 'brand'], paths: ['kinds.concept'] },
   { id: 'talent', label: 'Talent: hiring, skill, poaching, careers', keywords: ['chef', 'chefs', 'staff', 'talent', 'manager', 'hire', 'hiring', 'employees'], paths: ['kinds.talent', 'actions.hireTalent', 'events.poach'], flag: 'talent' },
   { id: 'pricing', label: 'Pricing and customer segments', keywords: ['price', 'pricing', 'customers', 'segments', 'demand'], paths: ['markets.local', 'actions.setVenuePrice', 'policies.pricing'] },
+  { id: 'safety', label: 'Safety, crowds and incidents', keywords: ['safety', 'crowds', 'crowd', 'accident', 'accidents', 'incidents', 'inspection', 'inspections', 'health inspections'], paths: ['policies.safety', 'events.incident', 'events.inspection'] },
   { id: 'critics', label: 'Critics, ratings and reviews', keywords: ['critic', 'critics', 'review', 'reviews', 'stars', 'rating'], paths: ['events.criticVisit'], flag: 'critics' },
   { id: 'acquisitions', label: 'Acquisitions', keywords: ['acquisition', 'acquire', 'merger', 'buy rivals'], paths: ['actions.acquireRival', 'negotiations.acquisition'], flag: 'acquisitions' },
   { id: 'recessions', label: 'Economic cycles and cost shocks', keywords: ['recession', 'economy', 'costs', 'inflation'], paths: ['world.cycle', 'world.vars.inputCost'], flag: 'recessions' },

@@ -72,8 +72,11 @@ result so recommendations reflect reality.
 
 Each stage is a function `(projectContext) → artifact` with a JSON schema, a validator and a
 repair strategy. Artifacts are stored as project memory documents (Rule 22). On failure the
-orchestrator repairs the failing artifact only (Rule 34). The checkpoint is saved after every
-stage, so a crashed build resumes where it stopped.
+orchestrator repairs the failing artifact only (Rule 34). A model patch that breaks validation is
+fed its errors and retried, then dropped, so the rest of the build keeps its work. The project is
+snapshotted at V0 (design), V1 (prototype), V2 (functional), V3 (playtested), V4 (polished) and
+Release, and any snapshot can be restored. A build interrupted by a crash or restart is marked
+failed; it does not resume mid-stage. Restore a snapshot or rebuild instead.
 
 1. **Prompt Compiler.** Long briefs are chunked (map-reduce). Extracts MUST / SHOULD / OPTIONAL /
    NEGATIVE / VISUAL / SIMULATION / CONTENT / SANDBOX requirements, inferred settings and
@@ -124,7 +127,7 @@ projects/<slug>/
     src/custom/           game-specific modules
     styles/theme.css      generated visual identity
     tests/                generated test suite
-  versions/v0-design … v5-release/   snapshots (restorable)
+  versions/000-v0-design … NNN-release/   snapshots (restorable; a backup is taken before every restore)
   reports/                tests, playtests, balance, UX, audit, screenshots
   releases/<slug>.html    standalone build
 ```
@@ -140,4 +143,55 @@ tests, bots and the Balance Lab.
 
 The server binds to `127.0.0.1` only. There is no telemetry. Cloud providers are off by
 default and can only be reached when you explicitly enable them. Generated games make no
-network requests (the release linter rejects external URLs).
+network requests. The bundle inlines all CSS, JS, data and assets, and the completeness critic
+flags any external URL in a game definition.
+
+
+## 7. What the deterministic design library covers (no model needed)
+
+The local model is optional. Without one, the designer composes a game from hand-built genre
+designs. Each one is a complete, validated and playtested design, re-parameterized per prompt
+through feature flags and a genre lexicon:
+
+| Design | Loop | Genres |
+|---|---|---|
+| `packs/airline.js` | operate & expand on a network | Airline (full hand-tuned pack: real airports, aircraft economics, segments, hubs, unions, alliances, slots, fuel, regulators) |
+| `archetypes/venue.js` | operate & expand in local markets | Restaurant groups, hotels & resorts, theme parks, casinos, hospital systems, generic chains |
+| `archetypes/portfolio.js` | deal & portfolio | Venture capital, incubators (minority stakes, follow-ons, power law); private equity, holding companies (control, leverage, operations, exits); LPs, TVPI/DPI |
+| `archetypes/slate.js` | project lifecycle | Broadway, film studios, TV networks, record labels, fashion houses (rights → talent → staged production with gates → audience market → hits, sequels, awards) |
+| `archetypes/agency.js` | client agency | Sports agents, talent agencies (representation, contract negotiations, endorsements); ad agencies, law firms, political consultancies, investment banks (accounts, capacity, craft, fees) |
+| `archetypes/institution.js` | programs in seasons | University athletic directors, college football, sports front offices, motorsport (programs play weekly games, standings, titles, coaching carousel, recruiting, facilities, boosters, compliance, media rights) |
+
+Genres without a dedicated lexicon (real estate, logistics, cruise lines, …) fall back to the
+closest archetype's generic variant. Requirements no design covers are marked **not found** in the
+requirements matrix and listed as visibly incomplete. When a local model is installed, the
+feature engineer can implement them as validated GDL patches.
+
+## 8. Modification recipes (the "understand the existing project" part)
+
+A change request is classified into intents: delegate, balance, visual, simplify, deepen, fix,
+export or feature. Each intent has a recipe that reads the game's *structure*, not its genre:
+
+* **delegate** finds the unit kind the player manages, the actions that add, grow and close units,
+  and the supply actions. It adds a strategy layer (growth pace, handling of underperformers,
+  capacity planning) that runs those actions through `autoAct` with the same scoring rivals use,
+  and puts it at the top of the screen that manages those units.
+* **balance** measures the original game with the Balance Lab, using long runs for late-game
+  requests. It diagnoses *why* from the stronger playthroughs: early vs late margins and growth,
+  who ends up on top, cash piling up, a thinning field. For late-game requests it adds a
+  structural mechanic (costs of dominance relative to the average competitor), then tunes the
+  `balance.knobs`. Each candidate configuration is checked against guardrails (competent
+  survival, early-game growth). The best one that passes is kept, and a before/after table on
+  the same seeds goes into `BALANCE_REPORT.md`.
+* **visual** finds the screen's main entity list and its natural category: a catalog reference
+  such as aircraft type, concept, sector or genre, or a role. It builds an Overview tab with a
+  showcase tile per category (silhouette, headline number, status dots, meters), a composition
+  donut and, where an age-like stat exists, a histogram. The detailed list moves to its own tab.
+* **simplify** trims navigation, defaults delegation on, and halves routine notifications.
+* **deepen / feature** re-enables design features through flags (a rebuild from the base design
+  plus a replay of every recorded patch) or hands the request to the local model's change
+  planner.
+
+Every change is validated with a dry run, tested, and reverted automatically if the game breaks.
+It is recorded as a patch in `artifacts/patches.json`, so a later rebuild keeps all earlier
+modifications.

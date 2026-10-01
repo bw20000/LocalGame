@@ -87,26 +87,53 @@ function buildGDL(brief, plan, module, opts = {}) {
   return gdl;
 }
 /* Requirement trace: requirement → implementing features/paths. Honest about gaps. */
+const STOP = new Set(['want', 'wants', 'would', 'should', 'could', 'make', 'build', 'game', 'games', 'deep', 'very', 'with', 'that', 'this', 'from', 'into', 'have', 'like', 'eventually', 'start', 'where', 'which', 'their', 'there', 'about', 'realistic', 'polished', 'visual', 'interface', 'management', 'simulation', 'player', 'small', 'large', 'great', 'good', 'more', 'less', 'much', 'many', 'every', 'including', 'also', 'things', 'stuff', 'overwhelming']);
+const stemW = (w) => w.replace(/(ies)$/, 'y').replace(/(ing|ions|ion|es|s)$/, '');
+function terms(text) { return [...new Set((String(text).toLowerCase().match(/[a-z]{4,}/g) || []).filter(w => !STOP.has(w)).map(stemW).filter(w => w.length >= 4))]; }
+/* Evidence search: where in THIS game definition does a requirement's vocabulary appear? */
+function evidence(gdl, text) {
+  const want = terms(text); if (!want.length) return [];
+  const hits = [];
+  const look = (path, label) => { const have = new Set(terms(label)); const n = want.filter(w => have.has(w)).length; if (n) hits.push({ path, n }); };
+  for (const a of [].concat(gdl.actions || [])) look(`actions.${a.id}`, `${a.id} ${a.label} ${a.describe || ''}`);
+  for (const e of [].concat(gdl.events || [])) look(`events.${e.id}`, `${e.id} ${e.title || ''}`);
+  for (const [k, kd] of Object.entries(gdl.kinds || {})) look(`kinds.${k}`, `${k} ${kd.label || ''} ${kd.plural || ''} ${Object.keys(kd.fields || {}).join(' ')}`);
+  for (const x of [].concat(gdl.policies || [], gdl.stakeholders || [], gdl.negotiations || [], gdl.projects || [], gdl.resources || [])) look(x.id, `${x.id} ${x.label || ''} ${x.describe || ''}`);
+  for (const v of ((gdl.world || {}).vars || [])) look(`world.vars.${v.id}`, `${v.id} ${v.label || ''}`);
+  if ((gdl.world || {}).cycle) look('world.cycle', 'economy economic cycle recession recessions boom downturn');
+  return hits.sort((a, b) => b.n - a.n).slice(0, 4).map(h => h.path);
+}
+/* Requirement trace: requirement → implementing features/paths. Honest about gaps. */
 function trace(compiled, module, gdl) {
   const feats = module.mod.FEATURES || [];
   const has = (p) => { const parts = p.split('.'); let o = gdl; for (const k of parts) { if (o == null) return false; if (Array.isArray(o)) { o = o.find(x => x && x.id === k); } else o = o[k]; } return o != null && !(Array.isArray(o) && !o.length); };
+  const g = genreInfo(compiled.genre.genre);
+  const genreWords = new Set(((g && g.keywords) || []).concat(g ? [g.name] : []).map(x => String(x).toLowerCase()));
   const engineStd = [
     { keys: ['commissioner', 'sandbox', 'edit'], where: 'Engine: Commissioner (edits entities, companies, world, events, rules, time)' },
     { keys: ['save', 'saves', 'load', 'export', 'import'], where: 'Engine: saves (autosave, slots, rename, duplicate, delete, export/import, migration)' },
     { keys: ['overwhelming', 'not overwhelming', 'progressive disclosure', 'navigation', 'easy to understand'], where: 'Engine + UI map: ≤7 destinations, needs-you queue, inspectors, Why? explanations, policies' },
     { keys: ['polished', 'visual', 'interface', 'ui', 'beautiful'], where: `Theme: ${gdl.theme ? gdl.theme.motif : 'default'} motif, signature visualizations` },
     { keys: ['onboarding', 'tutorial'], where: 'Onboarding intro + coach marks' },
-    { keys: ['history', 'records'], where: 'History module: records, awards, milestones, timeline, annual reviews' }
+    { keys: ['history', 'records'], where: 'History module: records, awards, milestones, timeline, annual reviews' },
+    { keys: ['rival', 'rivals', 'competitor', 'competitors', 'competition', 'compete'], where: 'Rival organizations using the same actions (heuristic AI with archetypes, memory, entries, exits)' },
+    { keys: ['economy', 'recession', 'recessions', 'cycle', 'cycles'], where: 'World: economic cycle with shocks' },
+    { keys: ['delegate', 'micromanag', 'automate', 'automation', 'tedious'], where: 'Policies: delegation of routine work' }
   ];
   return compiled.requirements.map(r => {
     const t = r.text.toLowerCase();
     const hits = feats.filter(f => f.keywords.some(k => t.includes(k.toLowerCase())));
-    const paths = [].concat(...hits.map(f => f.paths)).filter(has);
-    const std = engineStd.filter(s => s.keys.some(k => t.includes(k)));
-    let status = paths.length || std.length ? 'implemented' : 'not-found';
+    let paths = [].concat(...hits.map(f => f.paths)).filter(has);
+    const std = engineStd.filter(s => s.keys.some(k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + (k.length <= 3 ? '\\b' : '')).test(t)));
+    // statements of the genre or the starting situation ("a restaurant group tycoon game", "one restaurant")
+    const genreStatement = !paths.length && !std.length && !/,/.test(t) && terms(t).length <= 8 && [...genreWords].some(w => w && t.includes(w));
+    const ev = !paths.length && !std.length && !genreStatement ? evidence(gdl, r.text) : [];
+    if (ev.length) paths = ev;
+    let status = paths.length || std.length || genreStatement ? 'implemented' : 'not-found';
     if (r.kind === 'negative') status = 'respected';
     if (status === 'not-found' && r.kind !== 'must') status = 'partial';
-    return { id: r.id, text: r.text, kind: r.kind, area: r.area, status, where: paths.concat(std.map(s => s.where)), features: hits.map(h => h.label) };
+    const where = paths.concat(std.map(s => s.where), genreStatement ? [`Genre design: ${module.kind} “${module.id}”${module.lexiconGenre ? ' (' + module.lexiconGenre + ')' : ''}`] : []);
+    return { id: r.id, text: r.text, kind: r.kind, area: r.area, status, where, features: hits.map(h => h.label).concat(ev.length ? ['found in the game definition'] : []) };
   });
 }
 function memoryDocs(brief, plan, gdl, compiled, traceRows) {

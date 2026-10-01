@@ -73,6 +73,8 @@ async function run(htmlFile, { outDir, quick = false, onLog } = {}) {
           const text = (root.innerText || '').trim();
           const panels = root.querySelectorAll('.sec').length;
           const broken = Array.from(root.querySelectorAll('.sec .empty')).map(e => e.textContent).filter(t => /could not be drawn|Unknown section/.test(t));
+          const bad = (text.match(/\bNaN\b|\bundefined\b|\[object Object\]|\bInfinity\b|\{[a-z_.]+(\|[a-z]+)?\}/g) || []).slice(0, 5);
+          if (bad.length) broken.push('shows ' + [...new Set(bad)].join(', '));
           const visuals = root.querySelectorAll('svg.chart, svg.donut, .map svg, .showcase, .hist, .glyph, .spark').length;
           const numbers = (text.match(/[$€£]?\d[\d,.]*\s?[%kKMB]?/g) || []).length;
           return { panels, words: text.split(/\s+/).length, numbers, buttons: root.querySelectorAll('button').length, visuals, broken, overflowX: document.documentElement.scrollWidth > window.innerWidth + 2 };
@@ -141,9 +143,41 @@ async function run(htmlFile, { outDir, quick = false, onLog } = {}) {
     if (cont) { await cont.click(); await page.waitForFunction(() => window.__app && window.__app.game, null, { timeout: 30000 }).catch(() => {}); await page.waitForTimeout(400); }
     const tickAfter = await page.evaluate(() => window.__app && window.__app.game ? window.__app.game.state.tick : -1);
     step('Reload and continue a save', tickAfter === tickBefore, `turn ${tickBefore} → ${tickAfter}`);
-    // commissioner
-    const hasCm = await page.$('[data-a="nav:commissioner"]');
-    if (hasCm) { await hasCm.click(); await page.waitForTimeout(250); const ok = await page.$('.screen-commissioner, [data-a^="cmKind"], [data-a^="cmOrg"]'); step('Commissioner opens', !!ok); await shot(page, '50-commissioner'); }
+    // commissioner: enable it in settings, edit a rival through the UI, check the simulation changed
+    try {
+      await page.click('[data-a="nav:saves"]').catch(() => {}); await page.waitForTimeout(200);
+      const on = await page.evaluate(() => !!window.__app.prefs.commissioner);
+      if (!on) { await page.click('[data-change="prefCommish"]').catch(() => {}); await page.waitForTimeout(300); }
+      const cmNav = await page.$('[data-a="nav:commissioner"]');
+      if (cmNav) {
+        await cmNav.click(); await page.waitForTimeout(250);
+        await page.click('[data-a="tab:companies"]').catch(() => {}); await page.waitForTimeout(200);
+        const rival = await page.evaluate(() => { const g = window.__app.game; const o = g.liveOrgs().find(x => !x.isPlayer && x.level < 3); return o ? { id: o.id, cash: o.cash } : null; });
+        let changed = false;
+        if (rival) {
+          await page.click(`[data-a="cmOrg:${rival.id}"]`).catch(() => {}); await page.waitForTimeout(200);
+          const input = await page.$(`[data-change="cmOrgCash:${rival.id}"]`);
+          if (input) { await input.fill('123456789'); await page.keyboard.press('Tab'); await page.waitForTimeout(250); }
+          changed = await page.evaluate((id) => Math.round(window.__app.game.state.orgs[id].cash) === 123456789, rival.id);
+        }
+        await shot(page, '50-commissioner');
+        step('Commissioner edits the real simulation', changed, changed ? 'rival cash changed through the UI' : 'edit did not reach the simulation');
+      } else step('Commissioner opens', false, 'no commissioner entry after enabling it in settings');
+    } catch (e) { step('Commissioner edits the real simulation', false, e.message.split('\n')[0]); }
+    // unusual values: huge and negative numbers, a very long name — nothing may overflow or break
+    if (!quick) {
+      const shotsBefore = report.screenshots.length;
+      await page.evaluate(() => { const g = window.__app.game, P = g.playerOrg(); P._name0 = P.name; P.cash = 987654321098; P.name = P.name + ' International Holdings & Worldwide Ventures Group'; window.__app.render && window.__app.render(); });
+      await page.click('[data-a="nav:home"]').catch(() => {}); await page.waitForTimeout(200);
+      const big = await page.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > window.innerWidth + 2, bad: (document.body.innerText.match(/\bNaN\b|\bundefined\b|\bInfinity\b/g) || []).length }));
+      await shot(page, '55-unusual-values');
+      await page.evaluate(() => { const g = window.__app.game, P = g.playerOrg(); P.cash = -45678901; window.__app.render && window.__app.render(); });
+      await page.waitForTimeout(150);
+      const neg = await page.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > window.innerWidth + 2, bad: (document.body.innerText.match(/\bNaN\b|\bundefined\b|\bInfinity\b/g) || []).length }));
+      await page.evaluate(() => { const g = window.__app.game, P = g.playerOrg(); P.name = P._name0 || P.name; window.__app.render && window.__app.render(); });
+      step('Unusual values render cleanly', !big.overflowX && !big.bad && !neg.overflowX && !neg.bad, `huge cash: ${big.overflowX ? 'overflows' : 'ok'}${big.bad ? ', bad text' : ''}; negative cash: ${neg.overflowX ? 'overflows' : 'ok'}${neg.bad ? ', bad text' : ''}`);
+      void shotsBefore;
+    }
     // layout at narrow widths
     for (const [w, h, name] of [[1024, 768, 'tablet'], [390, 844, 'phone']]) {
       await page.setViewportSize({ width: w, height: h }); await page.click('[data-a="nav:home"]').catch(() => {}); await page.waitForTimeout(250);

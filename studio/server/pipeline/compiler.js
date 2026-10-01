@@ -26,9 +26,16 @@ function sentences(text) {
 }
 /* Break "with A, B, C and D" lists into individual features. */
 function featureList(sentence) {
+  const clean = (arr) => arr.map(s => s.trim().replace(/^(and|or)\s+/i, '').replace(/^(a|an|the|some|lots of|deep|realistic|real)\s+/i, '')).filter(s => s && s.split(/\s+/).length <= 7 && s.split(/\s+/).length >= 1 && !/^(it|this|that|them)$/i.test(s));
   const m = sentence.match(/\b(?:with|including|include|includes|featuring|such as|want|wants|like)\b\s+(.+)/i);
-  if (!m) return [];
-  return m[1].replace(/\.$/, '').split(/,|;|\band\b|\bplus\b/i).map(s => s.trim().replace(/^(a|an|the|some|lots of|deep|realistic|real)\s+/i, '')).filter(s => s && s.split(/\s+/).length <= 6 && !/^(it|this|that|them)$/i.test(s));
+  const before = m ? sentence.slice(0, m.index) : '';
+  if (m && !/,/.test(before)) { const parts = clean(m[1].replace(/\.$/, '').split(/,|;|\band\b|\bplus\b/i)); if (parts.length >= 2) return parts; }
+  // long comma lists of activities: "I raise funds, source and evaluate startups, negotiate term sheets, …"
+  if ((sentence.match(/,/g) || []).length >= 2) {
+    const body = sentence.replace(/\.$/, '').replace(/^(i|you|we|the player)\s+(can\s+|will\s+|should\s+|get to\s+)?/i, '');
+    return clean(body.split(/,|;/));
+  }
+  return [];
 }
 function classifyGenre(text) {
   const t = text.toLowerCase();

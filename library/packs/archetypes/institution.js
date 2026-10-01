@@ -11,22 +11,22 @@ const C = require('../common');
 
 const SPORTS = {
   university: [
-    { id: 'football', name: 'Football', start: 34, len: 14, revenue: 1, rev: 900000, cost: 420000, pop: 1.0, glyph: 'tower' },
-    { id: 'mbb', name: "Men's basketball", start: 44, len: 18, revenue: 1, rev: 260000, cost: 140000, pop: 0.7, glyph: 'star' },
-    { id: 'wbb', name: "Women's basketball", start: 44, len: 18, revenue: 0, rev: 50000, cost: 80000, pop: 0.35, glyph: 'star' },
-    { id: 'baseball', name: 'Baseball', start: 6, len: 14, revenue: 0, rev: 30000, cost: 60000, pop: 0.25, glyph: 'chart' },
-    { id: 'soccer', name: "Women's soccer", start: 33, len: 12, revenue: 0, rev: 15000, cost: 45000, pop: 0.2, glyph: 'chart' },
-    { id: 'volley', name: 'Volleyball', start: 34, len: 13, revenue: 0, rev: 20000, cost: 40000, pop: 0.2, glyph: 'chart' }],
+    { id: 'football', name: 'Football', start: 34, len: 14, revenue: 1, rev: 900000, cost: 294000, pop: 1.0, glyph: 'tower' },
+    { id: 'mbb', name: "Men's basketball", start: 44, len: 18, revenue: 1, rev: 260000, cost: 98000, pop: 0.7, glyph: 'star' },
+    { id: 'wbb', name: "Women's basketball", start: 44, len: 18, revenue: 0, rev: 50000, cost: 56000, pop: 0.35, glyph: 'star' },
+    { id: 'baseball', name: 'Baseball', start: 6, len: 14, revenue: 0, rev: 30000, cost: 42000, pop: 0.25, glyph: 'chart' },
+    { id: 'soccer', name: "Women's soccer", start: 33, len: 12, revenue: 0, rev: 15000, cost: 31000, pop: 0.2, glyph: 'chart' },
+    { id: 'volley', name: 'Volleyball', start: 34, len: 13, revenue: 0, rev: 20000, cost: 28000, pop: 0.2, glyph: 'chart' }],
   'college-football': [
-    { id: 'football', name: 'Football', start: 34, len: 14, revenue: 1, rev: 1100000, cost: 500000, pop: 1.0, glyph: 'tower' },
-    { id: 'mbb', name: "Men's basketball", start: 44, len: 18, revenue: 1, rev: 200000, cost: 120000, pop: 0.6, glyph: 'star' }],
+    { id: 'football', name: 'Football', start: 34, len: 14, revenue: 1, rev: 1100000, cost: 350000, pop: 1.0, glyph: 'tower' },
+    { id: 'mbb', name: "Men's basketball", start: 44, len: 18, revenue: 1, rev: 200000, cost: 84000, pop: 0.6, glyph: 'star' }],
   'sports-front-office': [
-    { id: 'first', name: 'First team', start: 32, len: 34, revenue: 1, rev: 1800000, cost: 1300000, pop: 1.0, glyph: 'tower' },
-    { id: 'reserves', name: 'Reserve team', start: 32, len: 34, revenue: 0, rev: 30000, cost: 90000, pop: 0.2, glyph: 'chart' },
-    { id: 'academy', name: 'Academy', start: 32, len: 34, revenue: 0, rev: 0, cost: 60000, pop: 0.1, glyph: 'star' }],
+    { id: 'first', name: 'First team', start: 32, len: 34, revenue: 1, rev: 1800000, cost: 910000, pop: 1.0, glyph: 'tower' },
+    { id: 'reserves', name: 'Reserve team', start: 32, len: 34, revenue: 0, rev: 30000, cost: 63000, pop: 0.2, glyph: 'chart' },
+    { id: 'academy', name: 'Academy', start: 32, len: 34, revenue: 0, rev: 0, cost: 42000, pop: 0.1, glyph: 'star' }],
   motorsport: [
-    { id: 'f1', name: 'Grand Prix team', start: 10, len: 36, revenue: 1, rev: 2200000, cost: 2000000, pop: 1.0, glyph: 'route' },
-    { id: 'junior', name: 'Junior series team', start: 10, len: 30, revenue: 0, rev: 40000, cost: 160000, pop: 0.2, glyph: 'route' }]
+    { id: 'f1', name: 'Grand Prix team', start: 10, len: 36, revenue: 1, rev: 2200000, cost: 1400000, pop: 1.0, glyph: 'route' },
+    { id: 'junior', name: 'Junior series team', start: 10, len: 30, revenue: 0, rev: 40000, cost: 112000, pop: 0.2, glyph: 'route' }]
 };
 const LEX = {
   university: { title: 'Athletic Director', tagline: 'Win games. Balance the budget. Keep everyone — almost — happy.', org: 'Athletic department', orgs: 'Athletic departments', unit: 'program', units: 'programs', coach: 'coach', coaches: 'coaches', motif: 'broadcast', boss: 'University president', fans: 'Boosters', champ: 'national championship', award: 'Athletic Director of the Year', conf: 'conference',
@@ -112,8 +112,8 @@ function build(opts = {}) {
         { id: 'margin', label: 'Operating margin', expr: 'org.profitYear / max(1, org.revenueYear)', format: 'pct1' },
         { id: 'facilitiesAvg', label: 'Facilities', expr: "avg(owned('program', org), it.facilities)", format: 'score' }
       ],
-      valuation: "max(0, org.cash - org.debt + org.media * 3 + org.donations * 3 + org.reputation * 1000000 + org.titles * 5000000 + sum(owned('program', org), it.facilities * it.sport.cost * 2 + it.strength * it.sport.cost * 3))",
-      income: [{ label: 'Media rights', expr: 'org.media / 52' }, { label: L.fans + ' donations', expr: `org.donations / 52` }, { label: 'Institutional support', expr: genre === 'university' ? '120000' : '0' }],
+      valuation: "max(0, (org.cash - org.debt) * 0.4 + org.media * 3 + org.donations * 4 + org.reputation * 2000000 + org.titles * 10000000 + sum(owned('program', org), it.facilities * it.sport.cost * 3 + it.strength * it.sport.cost * 5))",
+      income: [{ label: 'Media rights', expr: 'org.media / 52' }, { label: L.fans + ' donations', expr: `org.donations / 52` }, { label: genre === 'university' ? 'Institutional support' : 'Owner support', expr: genre === 'university' ? '200000' : genre === 'motorsport' ? '150000' : '60000' }],
       costs: [{ label: 'Administration & compliance', expr: '60000 + 25000 * org.compliance' }],
       player: { name: schools[0], cash: '12000000', set: { media: 'params.mediaBase * 0.6', mediaUntil: '156', donations: 'params.boosterBase * 0.6', school: `'${schools[0]}'` }, start: [] },
       rivals: { count: { full: nSchools - 1, light: 0, background: 0 }, aiEvery: 4, entryChance: '0', maxActive: nSchools, failGrace: 999,
@@ -154,7 +154,7 @@ function build(opts = {}) {
       effects: [{ op: 'set', target: 'param.c', field: 'salary', value: 'sal' }, { op: 'set', target: 'param.c', field: 'until', value: 'time.tick + param.yrs * 52' }, { op: 'set', path: 'self.coach', value: 'param.c' }, { op: 'news', text: '{self.school} hires {param.c.name} to lead {self.sport.name}' }],
       result: 'Hired {param.c.name}', ai: { score: '(self.winPctLast < 0.4 || !self.coach) && org.cash > sal * 2 ? (param.c.skill + param.c.recruiting * 0.5 + randn(0, 10) - (self.coach ? self.coach.skill + self.coach.recruiting * 0.5 : 0) - 10) * 10000 : 0', selfSample: 6, candidates: 3, news: '{org.name} hires {param.c.name}' } },
     { id: 'setBudget', label: 'Set program budget', verb: 'Budget', kind: 'program', category: 'money', icon: 'bank',
-      describe: 'Scholarships, staff, travel, recruiting. More money builds stronger rosters next season.',
+      describe: 'Scholarships, staff, travel, recruiting. More money builds stronger rosters next season.', tradeoff: 'Every dollar here comes out of another program — or the bottom line.',
       params: [{ id: 'lvl', label: 'Budget level', type: 'choice', default: 'self.budgetLevel', options: [{ value: 0.6, label: 'Cut (−40%)', describe: 'Saves money; the roster weakens' }, { value: 1, label: 'Standard' }, { value: 1.4, label: 'Invest (+40%)' }, { value: 2, label: 'All in (×2)', describe: 'Expensive — and the compliance office watches' }] }],
       preview: [{ label: 'Weekly cost at this level', expr: 'self.sport.cost * param.lvl', format: 'money' }, { label: 'Current level', expr: 'self.budgetLevel', format: 'x' }],
       effects: [{ op: 'set', path: 'self.budgetLevel', value: '+param.lvl' }].concat(genre === 'university' ? [{ op: 'if', cond: 'param.lvl < 0.7 && !self.sport.revenue', then: [{ op: 'stake', id: 'students', add: '-6' }] }] : []), result: '{self.sport.name} budget set',
@@ -165,7 +165,7 @@ function build(opts = {}) {
       params: [{ id: 'amt', label: 'Per year', type: 'choice', default: '1', options: [{ value: 0.5, label: 'Modest' }, { value: 1, label: 'Competitive' }, { value: 2, label: 'Market-leading' }] }],
       effects: [{ op: 'set', path: 'self.nil', value: 'self.sport.cost * 52 * 0.25 * param.amt' }, { op: 'if', cond: 'param.amt >= 2', then: [{ op: 'stake', id: 'scrutiny', add: '6' }] }], result: 'Player support set for {self.sport.name}',
       ai: { score: "archetype(org) == 'powerhouse' && self.nil == 0 ? 2000 : 0", selfSample: 3 } },
-    { id: 'facilityProject', label: 'Build or renovate facilities', verb: 'Build', kind: 'program', category: 'build', icon: 'building',
+    { id: 'facilityProject', label: 'Build or renovate facilities', verb: 'Build', kind: 'program', category: 'build', icon: 'building', primary: true,
       describe: 'Stadiums, arenas, training centers. Recruits and fans notice — for decades.', tradeoff: 'Huge upfront cost and a year or more of construction.', risk: 'Overruns happen.',
       params: [{ id: 'size', label: 'Project', type: 'choice', default: '1', options: [{ value: 0.5, label: 'Renovation' }, { value: 1, label: 'New training center' }, { value: 2, label: 'New stadium / arena' }] }],
       vars: { costX: 'self.sport.cost * 52 * 1.2 * param.size' },
@@ -174,11 +174,11 @@ function build(opts = {}) {
       effects: [{ op: 'set', path: 'self.building', value: 'true' }, { op: 'project', id: 'facility', target: 'self', set: { size: '+param.size', cost: 'costX' }, name: '{self.school} {self.sport.name} facility' }, { op: 'stake', id: 'boosters', add: '4' }],
       result: 'Construction approved', ai: { score: "!self.building && self.facilities < 45 && org.cash > costX * 0.8 ? (60 - self.facilities) * 10000 : 0", selfSample: 3, news: '{org.name} breaks ground on a new facility' } },
     { id: 'negotiateMedia', label: 'Negotiate media rights', verb: 'Negotiate', category: 'money', icon: 'handshake',
-      describe: 'Sell your games to a broadcaster. Winning and fan interest drive the price.', requires: [{ expr: 'time.tick >= player.mediaUntil - 26', msg: 'Your current deal runs until {date(org.mediaUntil)}' }],
+      describe: 'Sell your games to a broadcaster. Winning and fan interest drive the price.', tradeoff: 'A long deal locks in money — and locks you out of a better market later.', requires: [{ expr: 'time.tick >= player.mediaUntil - 26', msg: 'Your current deal runs until {date(org.mediaUntil)}' }],
       params: [{ id: 'n', label: 'Partner', type: 'entity', kind: 'network', sort: 'it.appetite' }],
       effects: [{ op: 'negotiate', id: 'mediaDeal', with: 'param.n' }], playerOnly: true },
-    { id: 'campaign', label: `Launch a ${L.fans.toLowerCase()} campaign`, verb: 'Fundraise', category: 'money', icon: 'megaphone', cooldown: 52,
-      describe: 'Dinners, naming rights, a capital campaign. Giving rises with winning and new facilities.', cost: { cash: '400000' }, costCategory: 'Fundraising',
+    { id: 'campaign', label: `Launch a ${L.fans.toLowerCase()} campaign`, verb: 'Fundraise', category: 'money', icon: 'megaphone', cooldown: 52, primary: true,
+      describe: 'Dinners, naming rights, a capital campaign. Giving rises with winning and new facilities.', tradeoff: 'Costs money up front; donors expect access — and wins.', cost: { cash: '400000' }, costCategory: 'Fundraising',
       effects: [{ op: 'set', path: 'org.donations', value: "org.donations * (1.02 + max(0, avg(filter(owned('program', org), it.sport.revenue), it.winPctLast) - 0.5) * 0.5 + (stake('boosters') - 50) / 500)" }, { op: 'stake', id: 'boosters', add: '3' }], result: 'Campaign launched',
       ai: { score: 'org.cash > 5000000 ? 2000 : 0' } }
   ];
@@ -268,8 +268,8 @@ function build(opts = {}) {
       stats: [{ label: 'Strength', expr: 'it.strength', format: 'score' }, { label: 'Facilities', expr: 'it.facilities', format: 'score' }, { label: 'Fans', expr: 'it.fan', format: 'score' }, { label: 'Budget', expr: 'it.budgetLevel', format: 'x' }], actions: ['hireCoach', 'setBudget', 'facilityProject', 'nilFund'] }, { type: 'pipeline', title: 'Construction', width: 'full', empty: 'Nothing under construction.' }] },
       { id: 'coaches', label: Cos, sections: [{ type: 'table', title: `Available ${L.coaches}`, width: 'full', kind: 'coach', filter: "count(all('program'), it.coach == outer.it) == 0", sort: 'it.fame', search: true, limit: 25, columns: [{ label: 'Name', expr: 'it.name' }, { label: 'Sport', expr: 'it.sport.name', format: 'text' }, { label: 'Coaching (est.)', expr: "est(it, 'skill').value", format: 'score' }, { label: 'Recruiting (est.)', expr: "est(it, 'recruiting').value", format: 'score' }, { label: 'Fame', expr: 'it.fame', format: 'score' }, { label: 'Titles', expr: 'it.titles', format: 'int' }, { label: 'Salary', expr: 'it.salary', format: 'money' }] }] }] };
   scr.standings = { title: 'Standings', subtitle: `The ${L.conf} this season`,
-    tabs: sports.map(sp => ({ id: sp.id, label: sp.name, sections: [{ type: 'table', title: sp.name, width: 'full', kind: 'program', filter: `it.sport.id == '${sp.id}'`, sort: 'it.wins - it.losses + it.winPctLast / 10', key: 'st_' + sp.id, limit: 20,
-      columns: [{ label: 'School', expr: 'it.school' }, { label: 'W', expr: 'it.wins', format: 'int' }, { label: 'L', expr: 'it.losses', format: 'int' }, { label: 'Last season', expr: 'it.lastRecord', format: 'text' }, { label: 'Strength', expr: 'it.strength', format: 'score' }, { label: 'Titles', expr: 'it.titles', format: 'int' }] }] })) };
+    tabs: [{ id: 'overall', label: 'Overall', sections: [{ type: 'rankings', title: 'Titles won', width: 'half', metric: 'org.titles', format: 'int' }, { type: 'rankings', title: 'Overall win rate', width: 'half', metric: 'org.winning', format: 'pct' }] }].concat(sports.map(sp => ({ id: sp.id, label: sp.name, sections: [{ type: 'table', title: sp.name, width: 'full', kind: 'program', filter: `it.sport.id == '${sp.id}'`, sort: 'it.wins - it.losses + it.winPctLast / 10', key: 'st_' + sp.id, limit: 20,
+      columns: [{ label: 'School', expr: 'it.school' }, { label: 'W', expr: 'it.wins', format: 'int' }, { label: 'L', expr: 'it.losses', format: 'int' }, { label: 'Last season', expr: 'it.lastRecord', format: 'text' }, { label: 'Strength', expr: 'it.strength', format: 'score' }, { label: 'Titles', expr: 'it.titles', format: 'int' }] }] }))) };
   scr.company.title = 'Department'; scr.company.actions = ['negotiateMedia', 'campaign', 'borrow', 'repay'];
   gdl.ui = { topbar: [{ label: 'Cash', expr: 'player.cash', format: 'money' }, { label: 'Flagship', expr: 'player.flagship', format: 'pct' }, { label: L.boss, expr: "stake('board')", format: 'score', explain: 'stake:board' }],
     nav: [{ id: 'home', label: 'Overview', icon: 'home' }, { id: 'programs', label: Us, icon: 'users' }, { id: 'standings', label: 'Standings', icon: 'chart' }, { id: 'company', label: 'Department', icon: 'bank' }, { id: 'industry', label: 'Rivals', icon: 'globe' }],

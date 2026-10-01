@@ -155,7 +155,7 @@ function playthrough(gdl, { strategy = 'balanced', seed = 1, years = 6, options 
   return {
     strategy, seed, years: years_, ticks, ms: Date.now() - t0, msPerTick: (Date.now() - t0) / Math.max(1, ticks),
     outcome: over ? over.outcome : 'running', endedAtYear: over ? +(over.t / per).toFixed(2) : null,
-    final: { cash: Math.round(P.cash), value: Math.round(P.m.value || 0), valueGrowth: (P.m.value || 0) / startValue, debt: Math.round(P.debt || 0), tier: g.state.progression.tier, tierIndex: g.tierIndex(g.state.progression.tier), margin: (P.m.profitYear || 0) / Math.max(1, P.m.revenueYear || 0) },
+    final: { cash: Math.round(P.cash), value: Math.round(P.m.value || 0), valueGrowth: (P.m.value || 0) / startValue, debt: Math.round(P.debt || 0), tier: g.state.progression.tier, tierIndex: g.tierIndex(g.state.progression.tier), margin: (P.m.revenueYear || 0) > Math.max(1, Math.abs(P.m.value || 0)) * 0.02 ? (P.m.profitYear || 0) / Math.max(1, P.m.revenueYear || 0) : null },
     stats, minCash: Math.round(minCash), crisisTicks, recovered,
     pacing: { avgNeeds: needsSum / Math.max(1, ticks), interruptsPerMonth: interrupts / Math.max(1, ticks / g.cal.ticksPerMonth), eventsByPriority: g.state.stats.events },
     world: { rivalsAlive: live.length - 1, rivalsFailed: Object.values(g.state.orgs).filter(o => !o.alive).length, entrants: Object.values(g.state.orgs).filter(o => o.founded > 0).length, phase: g.state.world.phase },

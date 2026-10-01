@@ -51,8 +51,18 @@ test('Save → load preserves state', 'save', () => { const s1 = g.serialize(); 
 test('Old saves migrate (missing fields filled)', 'save', () => { const st = JSON.parse(g.serialize()); delete st.history; delete st.settings; for (const o of Object.values(st.orgs)) delete o.res; const g3 = E.Game.load(gdl, st, { headless: true }); g3.tick(); assert(g3.state.history && g3.playerOrg().res, 'migration failed'); });
 test('Commissioner edits propagate to the simulation', 'commissioner', () => {
   const P = g.playerOrg(); const before = P.cash; g.addCash(P, 1e6, 'Commissioner'); assert(Math.abs(P.cash - before - 1e6) < 1, 'cash edit not applied');
-  const op = g.def.kindOrder.find(k => g.def.kinds[k].operate && g.owned(k, P.id).length);
-  if (op) { const keys = Object.keys(g.params).filter(k => /demand|size|market/i.test(k)); playTicks(g, 1, false); const sold0 = g.owned(op, P.id).reduce((a, e) => a + (e._demand || 0), 0); if (keys.length) { const k = keys[0]; const old = g.params[k]; g.params[k] = old * 0.3; playTicks(g, 1, false); const sold1 = g.owned(op, P.id).reduce((a, e) => a + (e._demand || 0), 0); g.params[k] = old; assert(sold1 < sold0, 'changing ' + k + ' did not change demand (' + sold0 + ' → ' + sold1 + ')'); } }
+  // a market-size parameter must move demand — measured across every active unit in the world
+  const op = g.def.kindOrder.find(k => g.def.kinds[k].operate);
+  const keys = Object.keys(g.params).filter(k => /demand|size|market/i.test(k) && typeof g.params[k] === 'number');
+  if (op && keys.length) {
+    playTicks(g, 1, false);
+    const dem = () => g.all(op).reduce((a, e) => a + (e._demand || 0), 0);
+    const d0 = dem();
+    if (d0 > 0) { const k = keys[0]; const old = g.params[k]; g.params[k] = old * 0.3; playTicks(g, 1, false); const d1 = dem(); g.params[k] = old; assert(d1 < d0, 'changing ' + k + ' did not change demand (' + Math.round(d0) + ' → ' + Math.round(d1) + ')'); }
+  }
+  // an entity edit must be visible to the simulation
+  const k2 = g.def.kindOrder.find(k => g.all(k).length && Object.entries(g.def.kinds[k].fields || {}).some(([, fd]) => (fd.type === 'number' || fd.type === 'int' || fd.type === 'money')));
+  if (k2) { const e = g.all(k2)[0]; const f = Object.entries(g.def.kinds[k2].fields).find(([, fd]) => fd.type === 'number' || fd.type === 'int' || fd.type === 'money')[0]; e[f] = 4242; assert(g.ev('self.' + f, g.scope({ self: e })) === 4242, 'entity edit not visible to formulas'); }
   const ph = (g.def.world.cycle && g.def.world.cycle.phases) || []; if (ph.length > 1) { const target = ph.find(p => p.id !== g.state.world.phase).id; g.forcePhase(target); playTicks(g, 1, false); assert(g.state.world.phase === target, 'forced phase did not apply'); }
   return 'cash, params and phase edits flowed through';
 });
