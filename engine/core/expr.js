@@ -165,7 +165,7 @@
           if (lam && lam.includes(i)) {
             // lambda argument: string literal → compile its contents; anything else → compile as lambda body
             const body = n.k === 'lit' && typeof n.v === 'string' ? compileNode(parse(n.v), n.v) : compileNode(n, src);
-            const fn = (it, s, env) => { const old = s.it; s.it = it; try { return body(s, env); } finally { s.it = old; } };
+            const fn = (it, s, env) => { const old = s.it, oldOuter = s.outer; s.outer = old; s.it = it; try { return body(s, env); } finally { s.it = old; s.outer = oldOuter; } };
             fn.isLambda = true; return fn;
           }
           return compileNode(n, src);

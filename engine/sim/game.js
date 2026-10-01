@@ -111,10 +111,17 @@
       this.generateEntities();
       this.initStakeholders();
       this.initPolicies();
+      this.computeDerived();
+      this.warmup();
+      // the player's company starts AFTER the world has been running (warm-up builds rival networks & history)
+      const p0 = this.playerOrg(); const cash0 = p0.cash;
+      p0.ledger = { cur: {}, last: {}, ytd: {}, prevYear: {}, series: [] };
+      p0.hist = {};
+      p0.cash = cash0;
       this.runStartOps(opts);
       this.computeDerived();
+      this.runOperationsPreview && this.runOperationsPreview();
       this.updateOrgMetrics();
-      this.warmup();
       this.initObjectives && this.initObjectives();
       this.emit('created', {});
       return st;
@@ -235,6 +242,7 @@
       const cyc = this.def.world.cycle;
       if (cyc && cyc.phases && cyc.phases.length) { w.phase = cyc.start || cyc.phases[0].id; w.phaseTicks = 0; }
       for (const t of this.def.world.trends || []) w.trends[t.id] = t.start != null ? t.start : 1;
+      w.season = 1; w.demand = 1; w.credit = 0;
       this.applyPhaseVars && this.applyPhaseVars();
     }
     createCatalogs() {
@@ -252,10 +260,11 @@
       const od = this.def.orgs;
       const P = od.player || {};
       const sc0 = this.scope();
-      const player = this.createOrg({ id: 'player', isPlayer: true, level: 1, name: (opts.options && opts.options.companyName) || this.tpl(P.name || 'Your Company', sc0), color: P.color || null });
+      const oo = opts.options || {};
+      const player = this.createOrg({ id: 'player', isPlayer: true, level: 1, name: oo.companyName || oo.name || this.tpl(P.name || 'Your Company', sc0), color: P.color || null });
       this.state.player = player.id;
       player.cash = this.num(P.cash != null ? P.cash : 1e6, this.scope({ org: player }));
-      if (P.set) for (const [f, x] of Object.entries(P.set)) player[f] = this.ev(x, this.scope({ org: player }));
+      if (P.set) for (const [f, x] of Object.entries(P.set)) this.assign(player, f, this.ev(x, this.scope({ org: player })), 'set');
       const R = od.rivals;
       if (!R) return;
       const arch = (R.archetypes || [{ id: 'standard', label: 'Competitor' }]);
@@ -279,7 +288,8 @@
           const o = this.createOrg({ name: fixed && fixed.name ? fixed.name : mkName(a), archetype: a.id, level: lvl, color: a.color || null, real: !!(fixed && fixed.real) });
           const sc = this.scope({ org: o });
           o.cash = this.num(a.cash != null ? a.cash : (R.cash != null ? R.cash : player.cash), sc) * (lvl === 3 ? 1 : this.rng.float(0.8, 1.25));
-          if (a.set) for (const [f, x] of Object.entries(a.set)) o[f] = this.ev(x, sc);
+          if (a.set) for (const [f, x] of Object.entries(a.set)) this.assign(o, f, this.ev(x, sc), 'set');
+          if (fixed && fixed.set) for (const [f, x] of Object.entries(fixed.set)) this.assign(o, f, this.ev(x, sc), 'set');
           if (lvl === 3) { o.m.size = this.num(R.backgroundSize || 1, sc) * this.rng.float(0.3, 1.5); continue; }
           if (a.start) this.runOps(a.start, sc);
           if (R.start) this.runOps(R.start, sc);
@@ -308,7 +318,6 @@
     runStartOps(opts) {
       const P = this.def.orgs.player || {};
       const sc = this.scope({ org: this.playerOrg() });
-      if (P.start) this.runOps(P.start, sc);
       const ng = this.def.gdl.newGame || {};
       for (const o of (ng.options || [])) {
         const val = this.state.options[o.id] != null ? this.state.options[o.id] : o.default;
@@ -316,6 +325,7 @@
         const choice = (o.choices || []).find(c => c.value === val);
         if (choice && choice.effects) this.runOps(choice.effects, Object.assign(this.scope({ org: this.playerOrg() }), { option: val }));
       }
+      if (P.start) this.runOps(P.start, sc);
       const scen = (ng.scenarios || []).find(s => s.id === this.state.options.scenario);
       if (scen && scen.effects) this.runOps(scen.effects, this.scope({ org: this.playerOrg() }));
       if (this.hooks) this.hooks.run('start', this);
@@ -457,6 +467,7 @@
         }
         case 'loan': this.takeLoan(actor, this.num(op.amount, sc), op.years != null ? this.num(op.years, sc) : 5, op.rate != null ? this.num(op.rate, sc) : null); return;
         case 'repay': this.repayDebt(actor, this.num(op.amount, sc)); return;
+        case 'forgiveDebt': this.forgiveDebt(actor, this.num(op.fraction != null ? op.fraction : 0.5, sc)); return;
         case 'acquireOrg': case 'mergeOrg': { const t = this.ev(op.target, sc); const to = op.to ? this.ev(op.to, sc) : actor; this.mergeOrgs(to, t, sc); return; }
         case 'moment': if (actor && !actor.isPlayer && !op.always) return; this.moment(this.tpl(op.title, sc), this.tpl(op.text || '', sc), op.tone || 'good', op.stat ? this.tpl(op.stat, sc) : null); return;
         case 'observe': { const t = this.ev(op.target, sc); if (t) this.observe(t, op.field, this.num(op.quality != null ? op.quality : 0.5, sc)); return; }

@@ -8,9 +8,30 @@
   function makeEnv(game) {
     const env = { strict: false };
     const st = () => game.state;
+    const fcache = {};
+    // cached per (kind, field): null = plain value, else {ref|refs|owner|dflt}
+    function fieldInfo(kind, prop) {
+      const kc = fcache[kind] || (fcache[kind] = Object.create(null));
+      let fi = kc[prop];
+      if (fi !== undefined) return fi;
+      if (prop === 'owner') fi = { owner: true };
+      else {
+        const kd = game.def.kinds[kind];
+        const fd = kd && kd.fields[prop];
+        if (!fd) fi = null;
+        else {
+          const dflt = fd.default != null && typeof fd.default !== 'string' ? fd.default : (['number', 'money', 'int', 'pct'].includes(fd.type) ? 0 : undefined);
+          if (fd.type === 'ref') fi = { ref: fd.ref, dflt };
+          else if (fd.type === 'refs') fi = { refs: fd.ref, dflt };
+          else fi = dflt === undefined ? null : { dflt };
+        }
+      }
+      kc[prop] = fi;
+      return fi;
+    }
 
     env.ident = (name, s) => {
-      if (name === 'it' || name === 'param' || name === 'terms' || name === 'fc') return undefined;
+      if (name === 'it' || name === 'param' || name === 'terms' || name === 'fc' || name === 'outer' || name === 'p' || name === 'project') return undefined;
       if (env.strict) throw new Error(`Unknown name '${name}'`);
       return undefined;
     };
@@ -32,13 +53,13 @@
         return undefined;
       }
       if (obj.__ent) {
+        const fi = fieldInfo(obj.kind, prop);
         let v = obj[prop];
-        if (prop === 'owner') return v != null ? (st().orgs[v] || v) : null;
-        const kd = game.def.kinds[obj.kind];
-        const fd = kd && kd.fields[prop];
-        if (v === undefined && fd) v = fd.default != null && typeof fd.default !== 'string' ? fd.default : (fd.type === 'number' || fd.type === 'money' || fd.type === 'int' || fd.type === 'pct' ? 0 : undefined);
-        if (fd && fd.type === 'ref' && v != null && typeof v !== 'object') return game.ent(fd.ref, v) || null;
-        if (fd && fd.type === 'refs' && Array.isArray(v)) return v.map(id => game.ent(fd.ref, id)).filter(Boolean);
+        if (fi === null) return v;
+        if (fi.owner) return v != null ? (st().orgs[v] || v) : null;
+        if (v === undefined) v = fi.dflt;
+        if (fi.ref && v != null && typeof v !== 'object') return game.ent(fi.ref, v) || null;
+        if (fi.refs && Array.isArray(v)) return v.map(id => game.ent(fi.refs, id)).filter(Boolean);
         return v;
       }
       if (obj.__world) {
@@ -93,7 +114,19 @@
       name: (e) => (e && typeof e === 'object' ? e.name : (e == null ? '' : String(e))),
       upper: (s) => String(s || '').toUpperCase(), lower: (s) => String(s || '').toLowerCase(),
       plural: (n, w) => U.plural(n, w), date: (t) => game.cal.label(t == null ? st().tick : t),
-      year: () => game.cal.yearOf(st().tick)
+      year: () => game.cal.yearOf(st().tick),
+      distinct: (arr) => { if (!Array.isArray(arr)) return []; const seen = new Set(), out = []; for (const x of arr) { const k = x && typeof x === 'object' ? x.id : x; if (k == null || seen.has(k)) continue; seen.add(k); out.push(x); } return out; },
+      concat: (...arrs) => [].concat(...arrs.map(a => (Array.isArray(a) ? a : (a == null ? [] : [a])))),
+      pairKey: (a, b) => { const x = a && typeof a === 'object' ? a.id : a, y = b && typeof b === 'object' ? b.id : b; return x < y ? x + '-' + y : y + '-' + x; },
+      ownedWhere: Object.assign(function ([kind, field, value, org], s) { const o = org == null ? (s.org || game.playerOrg()) : org; const oid = o && typeof o === 'object' ? o.id : o; const v = value && typeof value === 'object' ? value.id : value; return game.refs(kind, field, v).filter(e => e.owner === oid); }, { scoped: true }),
+      ownsAt: Object.assign(function ([kind, field, value, org], s) { const o = org == null ? (s.org || game.playerOrg()) : org; const oid = o && typeof o === 'object' ? o.id : o; const v = value && typeof value === 'object' ? value.id : value; return game.refs(kind, field, v).some(e => e.owner === oid); }, { scoped: true }),
+      where: (kind, field, value) => game.refs(kind, field, value && typeof value === 'object' ? value.id : value),
+      creditLimit: (org) => game.creditLimit(org && typeof org === 'object' ? org : (st().orgs[org] || game.playerOrg())),
+      borrowRoom: (org) => game.borrowRoom(org && typeof org === 'object' ? org : (st().orgs[org] || game.playerOrg())),
+      rateFor: (org) => game.rateFor(org && typeof org === 'object' ? org : (st().orgs[org] || game.playerOrg())),
+      projectsOf: (org, id) => { const oid = org && typeof org === 'object' ? org.id : (org || st().player); return Object.values(st().projects).filter(p => p.owner === oid && (!id || p.id === id)).map(p => Object.assign({ id: p.id, name: p.name, left: p.left }, p.data)); },
+      isPlayer: (x) => !!(x && (x.isPlayer || x.id === st().player || x.owner === st().player || x === st().player)),
+      archetype: (org) => (org && typeof org === 'object' ? org.archetype : null)
     };
 
     // aggregates: first arg is a kind name or an array; lambda args are (it, s, env) functions

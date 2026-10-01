@@ -81,6 +81,7 @@
     },
     actionScope(a, org, self, param) {
       const sc = this.scope({ org, self, param, actor: org });
+      for (const [k, x] of Object.entries(a.vars || {})) sc[k] = this.ev(x, sc);
       if (a.forecast) {
         const set = {};
         for (const [f, x] of Object.entries(a.forecast.set || {})) { let v = this.ev(x, sc); if (v && typeof v === 'object' && v.__ent) v = v.id; set[f] = v; }

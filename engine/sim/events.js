@@ -111,7 +111,9 @@
       if (st.events.log.length > 300) st.events.log.shift();
       if (ev.effects) this.runOps(ev.effects, sc);
       const title = this.tpl(ev.title || ev.id, sc), text = this.tpl(ev.text || '', sc);
-      const choices = (ev.choices || []).map((c, i) => ({ i, label: this.tpl(c.label, sc), describe: c.describe ? this.tpl(c.describe, sc) : '', enabled: c.requires ? !!this.ev(c.requires, sc) : true, preview: (c.preview || []).map(p => ({ label: p.label, text: U.format(this.ev(p.expr, sc), p.format) })) }));
+      const P = this.playerOrg();
+      const affordable = (c) => !c.cost || (P.cash + this.creditLimit(P) * 0.5) >= this.num(c.cost, sc, 0);
+      const choices = (ev.choices || []).map((c, i) => ({ i, label: this.tpl(c.label, sc), describe: c.describe ? this.tpl(c.describe, sc) : '', enabled: (c.requires ? !!this.ev(c.requires, sc) : true) && affordable(c), why: affordable(c) ? '' : 'Not enough cash', preview: (c.preview || []).map(p => ({ label: p.label, text: U.format(this.ev(p.expr, sc), p.format) })) }));
       if (!choices.length || st.warm) {
         if (ev.priority !== 'background' || ev.news) this.news(ev.news ? this.tpl(ev.news, sc) : `${title}${text ? ' — ' + text : ''}`, ev.priority === 'critical' ? 'important' : ev.priority, { tag: ev.tag || 'event', refs: Object.values(bind || {}) });
         if (ev.moment) this.moment(title, text, ev.tone || 'good');
@@ -133,6 +135,7 @@
       if (!ch) return { ok: false };
       const sc = this.eventScope(inst.bind);
       if (!auto && ch.requires && !this.ev(ch.requires, sc)) return { ok: false, why: ['Not possible right now'] };
+      if (ch.cost) { const P = this.playerOrg(); const c = this.num(ch.cost, sc, 0); if (P.cash + this.creditLimit(P) * 0.5 < c) { if (!auto) return { ok: false, why: ['Not enough cash'] }; const alt = (ev.choices || []).findIndex(x => !x.cost); if (alt >= 0 && alt !== choiceIndex) { st.events.pending.splice(i, 0, inst); return this.resolveEvent(iid, alt, true); } } }
       st.events.pending.splice(i, 1);
       if (ch.cost) { const c = this.num(ch.cost, sc, 0); if (c) this.addCash(this.playerOrg(), -c, ch.costCategory || 'Other costs'); }
       this.runOps(ch.effects, sc);

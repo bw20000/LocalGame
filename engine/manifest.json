@@ -1,6 +1,38 @@
 {
   "about": "Load order for the engine. Used by the dev loader (index.html), the Node loader (node.js) and the release bundler.",
-  "sim": ["core/rng.js", "core/util.js", "core/expr.js", "sim/env.js", "sim/game.js", "sim/world.js", "sim/finance.js", "sim/market.js", "sim/actions.js", "sim/ai.js", "sim/events.js", "sim/projects.js", "sim/negotiation.js", "sim/stakeholders.js", "sim/history.js", "sim/progression.js", "sim/people.js"],
-  "ui": [],
-  "css": []
+  "sim": [
+    "core/rng.js",
+    "core/util.js",
+    "core/expr.js",
+    "sim/env.js",
+    "sim/game.js",
+    "sim/world.js",
+    "sim/finance.js",
+    "sim/market.js",
+    "sim/actions.js",
+    "sim/ai.js",
+    "sim/events.js",
+    "sim/projects.js",
+    "sim/negotiation.js",
+    "sim/stakeholders.js",
+    "sim/history.js",
+    "sim/progression.js",
+    "sim/people.js"
+  ],
+  "ui": [
+    "ui/dom.js",
+    "ui/persist.js",
+    "ui/theme.js",
+    "ui/sections.js",
+    "ui/dialogs.js",
+    "ui/admin.js",
+    "ui/app.js"
+  ],
+  "css": [
+    "ui/base.css",
+    "ui/motifs.css"
+  ],
+  "assets": {
+    "worldLand": "assets/world-land.json"
+  }
 }

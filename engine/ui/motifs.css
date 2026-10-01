@@ -1,0 +1,111 @@
+/* Genre motifs: each changes the game's visual voice, not just its colors. Selected by theme.motif. */
+/* textures */
+.tex-paper{background-image:radial-gradient(color-mix(in srgb,var(--ink) 4%,transparent) 1px,transparent 1px);background-size:3px 3px}
+.tex-grid{background-image:linear-gradient(color-mix(in srgb,var(--accent) 8%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--accent) 8%,transparent) 1px,transparent 1px);background-size:24px 24px}
+.tex-carbon{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.015) 0 2px,transparent 2px 6px)}
+
+/* ---------- DEPARTURE BOARD (airlines, logistics, transit) ---------- */
+.motif-departure-board .topbar{background:var(--band);color:var(--band-ink);border-bottom:0}
+.motif-departure-board .topbar .brand-txt small,.motif-departure-board .topbar .clock small,.motif-departure-board .tb-metric span{color:color-mix(in srgb,var(--band-ink) 60%,transparent)}
+.motif-departure-board .clock{border-left-color:color-mix(in srgb,var(--band-ink) 20%,transparent);font-family:var(--font-mono)}
+.motif-departure-board .clock b{color:#f6b73c;letter-spacing:.06em;text-transform:uppercase}
+.motif-departure-board .tb-metric b{color:#f6b73c}.motif-departure-board .tb-metric.bad b{color:#ff7a66}.motif-departure-board .tb-metric.good b{color:#7ee0a1}
+.motif-departure-board .topbar .icon-btn{color:var(--band-ink)}.motif-departure-board .topbar .icon-btn:hover{background:rgba(255,255,255,.08)}
+.motif-departure-board .topbar .btn:not(.primary){background:transparent;color:var(--band-ink);border-color:rgba(255,255,255,.2)}
+.motif-departure-board .sec-head h3{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:.74em;font-weight:700;color:var(--muted)}
+.motif-departure-board .sec-board{background:var(--band);border-color:var(--band)}
+.motif-departure-board .sec-board .sec-head h3{color:#f6b73c}
+.motif-departure-board .sec-board .board{color:#f2efe6}
+.motif-departure-board .sec-board .brd-row{border-bottom:1px solid rgba(255,255,255,.07)}
+.motif-departure-board .sec-board .brd-row:not(.brd-head) span{background:rgba(255,255,255,.05);border-radius:2px;padding:3px 6px;letter-spacing:.04em}
+.motif-departure-board .sec-board .brd-head{color:rgba(255,255,255,.45)}
+.motif-departure-board .sec-board button.brd-row:hover{background:rgba(255,255,255,.06)}
+.motif-departure-board .sec-board .brd-status{color:#f6b73c}.motif-departure-board .sec-board .brd-status.tone-good{color:#7ee0a1}.motif-departure-board .sec-board .brd-status.tone-bad{color:#ff7a66}
+.motif-departure-board .metric-v{font-family:var(--font-mono)}
+.motif-departure-board .title-screen{background:var(--band);color:var(--band-ink)}
+.motif-departure-board .title-name{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.08em;color:#f6b73c;font-weight:700}
+.motif-departure-board .title-name::after{content:"";display:block;height:3px;width:120px;margin:14px auto 0;background:repeating-linear-gradient(90deg,#f6b73c 0 14px,transparent 14px 20px)}
+.motif-departure-board .title-tag,.motif-departure-board .disclaimer{color:color-mix(in srgb,var(--band-ink) 70%,transparent)}
+.motif-departure-board .title-screen .btn:not(.primary){background:transparent;color:var(--band-ink);border-color:rgba(255,255,255,.25)}
+.motif-departure-board .screen-head h1{font-family:var(--font-display)}
+.motif-departure-board .moment h2{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em}
+.motif-departure-board .nav-item.on{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+
+/* ---------- PLAYBILL (theater, music, film premieres) ---------- */
+.motif-playbill .topbar{border-bottom:4px double var(--ink)}
+.motif-playbill .brand-txt b{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em}
+.motif-playbill .sec{border:1px solid var(--ink);border-radius:2px;box-shadow:3px 3px 0 color-mix(in srgb,var(--ink) 12%,transparent)}
+.motif-playbill .sec-head h3{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.14em;font-size:.86em;border-bottom:2px solid var(--accent-2);padding-bottom:4px}
+.motif-playbill .screen-head h1{text-transform:uppercase;letter-spacing:.06em}
+.motif-playbill .title-card{border:2px solid var(--ink);padding:44px 40px;background:var(--surface);box-shadow:8px 8px 0 var(--accent-2)}
+.motif-playbill .title-name{text-transform:uppercase;letter-spacing:.06em}
+.motif-playbill .title-card::before{content:"";display:block;height:14px;margin:-30px -26px 26px;background:var(--accent-2)}
+.motif-playbill .moment{background:radial-gradient(circle,var(--accent-2) 2px,transparent 3px) 0 0/22px 22px;}
+.motif-playbill .moment h2{background:var(--surface);display:inline-block;padding:4px 16px;text-transform:uppercase}
+
+/* ---------- BROADCAST (sports) ---------- */
+.motif-broadcast .topbar{background:linear-gradient(90deg,var(--band) 0,var(--band) 60%,var(--accent) 100%);color:var(--band-ink);border:0}
+.motif-broadcast .topbar .icon-btn,.motif-broadcast .topbar .btn:not(.primary){color:var(--band-ink);background:transparent;border-color:rgba(255,255,255,.25)}
+.motif-broadcast .tb-metric span,.motif-broadcast .clock small,.motif-broadcast .brand-txt small{color:rgba(255,255,255,.65)}
+.motif-broadcast .sec-head h3{display:inline-block;background:var(--band);color:var(--band-ink);padding:4px 14px 4px 10px;transform:skewX(-12deg);text-transform:uppercase;letter-spacing:.08em;font-size:.8em;font-family:var(--font-body);font-weight:800;border-left:5px solid var(--accent)}
+.motif-broadcast .metric-v,.motif-broadcast .screen-head h1{font-family:var(--font-display);font-weight:800;font-style:italic;text-transform:uppercase}
+.motif-broadcast .title-name{font-style:italic;text-transform:uppercase;font-weight:800}
+
+/* ---------- EDITORIAL (media, agencies, studios) ---------- */
+.motif-editorial .sec{border:0;border-top:2px solid var(--ink);border-radius:0;background:transparent}
+.motif-editorial .sec-head{padding-left:0;padding-right:0}.motif-editorial .sec-body{padding-left:0;padding-right:0}
+.motif-editorial .sec-head h3{font-family:var(--font-display);font-size:1.25em;font-style:italic}
+.motif-editorial .screen-head{border-bottom:4px double var(--ink);padding-bottom:10px}
+.motif-editorial .screen-head h1{font-size:2.4em;font-weight:700}
+.motif-editorial .metric-l{font-variant:small-caps;letter-spacing:.04em;text-transform:none;font-size:.95em}
+.motif-editorial .title-name{font-weight:800;font-size:clamp(46px,7vw,84px)}
+
+/* ---------- BLUEPRINT (architecture, engineering, logistics, hospitals) ---------- */
+.motif-blueprint .sec{border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:2px;background:color-mix(in srgb,var(--surface) 92%,var(--accent))}
+.motif-blueprint .sec-head h3,.motif-blueprint .metric-l,.motif-blueprint .tbl th{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.12em;font-size:.74em;color:var(--accent)}
+.motif-blueprint .screen-head h1{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+
+/* ---------- LEDGER (finance, banking, PE) ---------- */
+.motif-ledger .tbl tr:nth-child(even) td{background:color-mix(in srgb,var(--good) 6%,transparent)}
+.motif-ledger .sec{border-radius:2px}
+.motif-ledger .sec-head h3{font-family:var(--font-display);font-variant:small-caps;letter-spacing:.06em;font-size:1.1em}
+.motif-ledger .metric-v,.motif-ledger .tbl td{font-family:var(--font-mono)}
+
+/* ---------- MENU CARD (restaurants, hospitality) ---------- */
+.motif-menu-card .sec{border-radius:2px;border:1px solid var(--line);box-shadow:inset 0 0 0 4px var(--surface),inset 0 0 0 5px var(--line)}
+.motif-menu-card .sec-head{justify-content:center}.motif-menu-card .sec-head h3{font-family:var(--font-display);font-variant:small-caps;letter-spacing:.14em;font-weight:500;font-size:1.15em}
+.motif-menu-card .pv-item{border-bottom:1px dotted var(--ink-2)}
+.motif-menu-card .title-name{font-variant:small-caps;letter-spacing:.06em;font-weight:500}
+
+/* ---------- TERMINAL (tech, hedge funds, trading) ---------- */
+.motif-terminal body,.motif-terminal{font-family:var(--font-mono)}
+.motif-terminal .sec{border-radius:0;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.motif-terminal .sec-head h3{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;font-size:.78em;color:var(--accent)}
+.motif-terminal .sec-head h3::before{content:"> "}
+.motif-terminal h1,.motif-terminal h2{font-family:var(--font-mono)}
+
+/* ---------- DEAL ROOM (VC, M&A, conglomerates) ---------- */
+.motif-deal-room .sec{border-radius:3px;border-top:3px solid var(--accent)}
+.motif-deal-room .sec-head h3{font-family:var(--font-display);font-size:1.12em}
+.motif-deal-room .chip{border-radius:2px;text-transform:uppercase;letter-spacing:.08em;font-size:.72em;font-weight:700;border-width:2px}
+.motif-deal-room .screen-head h1{font-weight:500}
+
+/* ---------- ATELIER (fashion, luxury, auction) ---------- */
+.motif-atelier .sec{border:0;border-bottom:1px solid var(--ink);border-radius:0;background:transparent}
+.motif-atelier .sec-head h3{font-family:var(--font-display);font-weight:400;font-size:1.5em;font-style:italic}
+.motif-atelier .screen-head h1{font-weight:400;font-size:2.6em;letter-spacing:.02em}
+.motif-atelier .btn{border-radius:0;text-transform:uppercase;letter-spacing:.12em;font-size:.82em}
+.motif-atelier .title-name{font-weight:400;letter-spacing:.04em;font-size:clamp(48px,8vw,96px)}
+
+/* ---------- RESORT (hotels, parks, cruises, casinos) ---------- */
+.motif-resort{--radius:14px}
+.motif-resort .sec{border:0;box-shadow:0 4px 20px rgba(20,60,80,.08)}
+.motif-resort .sec-head h3{font-family:var(--font-display);font-weight:500;font-size:1.15em}
+.motif-resort .btn{border-radius:999px}
+.motif-resort .ecard{border:0;box-shadow:0 2px 12px rgba(20,60,80,.08)}
+
+/* ---------- PADDOCK (motorsport) ---------- */
+.motif-paddock .topbar{border-bottom:3px solid var(--accent)}
+.motif-paddock .sec{border-radius:2px;border-left:4px solid var(--accent)}
+.motif-paddock .sec-head h3,.motif-paddock .metric-l{text-transform:uppercase;letter-spacing:.12em;font-size:.76em;font-weight:800}
+.motif-paddock .metric-v{font-family:var(--font-mono);font-style:italic}

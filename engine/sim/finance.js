@@ -75,19 +75,32 @@
           for (const u of ups) {
             if (u.when && !this.ev(u.when, sc)) continue;
             const c = this.num(u.expr, sc);
-            if (c) this.addCash(org, -Math.abs(c), u.category || u.label || 'Upkeep');
+            if (!c) continue;
+            if (u.nonCash) { const cat = u.category || u.label || 'Depreciation'; org.ledger.cur[cat] = (org.ledger.cur[cat] || 0) - Math.abs(c); (org.ledger.nonCash = org.ledger.nonCash || {})[cat] = true; }
+            else this.addCash(org, -Math.abs(c), u.category || u.label || 'Upkeep');
           }
         }
       }
       // org-level costs and income (overhead, scale costs, sponsorship...)
+      const tickOps = this.def.orgs.tick;
+      const warm = this.state.warm;
+      if (tickOps) for (const org of this.liveOrgs()) if (org.level < 3 && !(warm && org.isPlayer)) this.runOps(tickOps, this.scope({ org }));
       const oc = this.def.orgs.costs || [];
       const oi = this.def.orgs.income || [];
       for (const org of this.liveOrgs()) {
-        if (org.level === 3) continue;
+        if (org.level === 3 || (warm && org.isPlayer)) continue;
         const sc = this.scope({ org });
         for (const c of oc) { if (c.when && !this.ev(c.when, sc)) continue; const v = this.num(c.expr, sc); if (v) this.addCash(org, -Math.abs(v), c.label || 'Overhead'); }
         for (const c of oi) { if (c.when && !this.ev(c.when, sc)) continue; const v = this.num(c.expr, sc); if (v) this.addCash(org, Math.abs(v), c.label || 'Other income'); }
       }
+    },
+    forgiveDebt(org, fraction) {
+      let cut = 0;
+      for (const l of org.loans) { const c = l.balance * fraction; l.balance -= c; cut += c; }
+      org.loans = org.loans.filter(l => l.balance > 1);
+      org.debt = U.sum(org.loans, l => l.balance);
+      if (org.cash < 0) { const c = -org.cash * fraction; org.cash += c; cut += c; }
+      return cut;
     },
     runFinance() {
       for (const org of this.liveOrgs()) {
@@ -119,7 +132,11 @@
       const L = org.ledger[period] || {};
       let t = 0; for (const [k, v] of Object.entries(L)) if (!filter || filter(k, v)) t += v; return t;
     },
-    isOperatingCategory(cat) { return cat !== 'Financing' && cat !== 'Capex' && cat !== 'Asset sales' && cat !== 'Equity'; },
+    isOperatingCategory(cat) {
+      const fin = this.def.gdl.finance || {};
+      const non = fin.nonOperating || ['Financing', 'Capex', 'Asset sales', 'Equity', 'Acquisitions'];
+      return !non.includes(cat);
+    },
     updateOrgMetrics() {
       const per = this.cal.perYear;
       for (const org of this.liveOrgs()) {

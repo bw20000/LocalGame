@@ -62,6 +62,7 @@
       const rep = units[0];
       const scRep = this.scope({ self: rep, org: this.state.orgs[rep.owner] || this.playerOrg(), key: opts.key, units: units.length });
       const size = Math.max(0, this.num(mk.size, scRep, 0));
+      scRep.size = size;
       const outside = this.num(mk.outside != null ? mk.outside : 0, scRep, 0);
       const res = units.map(e => {
         const org = this.state.orgs[e.owner] || opts.org || this.playerOrg();
@@ -75,10 +76,18 @@
         const ex = res.map(r => { const v = r.cap > 0 ? Math.exp(this.unitUtility(r.e, seg, mk, op, r.org, r.sc)) : 0; den += v; return v; });
         res.forEach((r, i) => { const d = segSize * ex[i] / den; r.dem[seg.id] = d; r.demand += d; });
       }
-      const order = segs.slice().sort((a, b) => (b.priceMult || 1) - (a.priceMult || 1));
       for (const r of res) {
-        let left = r.cap; let rev = 0;
-        for (const seg of order) { const s = Math.min(r.dem[seg.id] || 0, left); r.sold[seg.id] = s; left -= s; r.soldTot += s; rev += s * r.price * (seg.priceMult || 1); }
+        // premium segments are served first (yield management); priceMult may be a formula (e.g., distance-dependent)
+        // capShare limits seats sellable to a segment (e.g., premium cabin size); excess demand down-sells to the next class
+        const pm = segs.map(seg => [seg, seg.priceMult == null ? 1 : (typeof seg.priceMult === 'number' ? seg.priceMult : this.num(seg.priceMult, r.sc, 1)), seg.capShare == null ? 1 : this.num(seg.capShare, r.sc, 1)]);
+        pm.sort((x, y) => y[1] - x[1]);
+        let left = r.cap; let rev = 0; let spill = 0;
+        for (const [seg, mult, cs] of pm) {
+          const want = (r.dem[seg.id] || 0) + spill;
+          const s = Math.min(want, left, r.cap * cs);
+          spill = (seg.downsell === false) ? 0 : Math.max(0, Math.min(want, left) - s) * (seg.downsellRate != null ? seg.downsellRate : 0.7);
+          r.sold[seg.id] = s; left -= s; r.soldTot += s; rev += s * r.price * mult;
+        }
         r.sales = rev;
       }
       const totalSold = res.reduce((a, r) => a + r.soldTot, 0);
@@ -97,15 +106,17 @@
       for (const l of (op.costs || [])) { const v = Math.abs(this.num(l.expr, ctx, 0)); if (v) { cost += v; lines.push([l.label || 'Costs', -v]); } }
       const out = { demand: r.demand, sold: r.soldTot, capacity: r.cap, load: ctx.load, revenue: rev, cost, profit: rev - cost, share: r.share, price: r.price, segSold: r.sold, lines };
       if (post) {
-        for (const [lab, v] of lines) this.addCash(r.org, v, lab);
+        if (!this._dryOps) for (const [lab, v] of lines) this.addCash(r.org, v, lab);
         e._demand = r.demand; e._sold = r.soldTot; e._cap = r.cap; e._load = ctx.load; e._rev = rev; e._cost = cost; e._profit = rev - cost; e._share = r.share;
         e._seg = Object.fromEntries(Object.entries(r.sold).map(([k, v]) => [k, Math.round(v)]));
-        const hp = e._hp = e._hp || []; hp.push(Math.round(rev - cost)); if (hp.length > 52) hp.shift();
+        if (!this._dryOps) { const hp = e._hp = e._hp || []; hp.push(Math.round(rev - cost)); if (hp.length > 52) hp.shift(); }
         for (const [f, ex] of Object.entries(op.stats || {})) { const v = this.ev(ex, ctx); e[f] = typeof v === 'number' && !Number.isFinite(v) ? 0 : v; }
-        if (op.after) this.runOps(op.after, ctx);
+        if (op.after && !this._dryOps) this.runOps(op.after, ctx);
       }
       return out;
     },
+    /* Fill unit stats (_sold, _load, …) without moving money: used at game start so screens are never blank. */
+    runOperationsPreview() { this._dryOps = true; try { this.runOperations(); } finally { this._dryOps = false; } },
     runOperations() {
       for (const kind of this.operatingKinds()) {
         const op = this.def.kinds[kind].operate;
