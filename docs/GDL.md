@@ -130,6 +130,12 @@ the browser or the file system.
 
 - **Field types:** `number`, `int`, `money`, `pct`, `text`, `enum` (with `options`), `ref`,
   `refs`, `list`, `bool`. Add `hidden: true` for values the player only sees as estimates.
+- **Entity ticks.** `tick: [ops]` runs every tick for every entity of the kind, owned or not;
+  `tickEvery: 4` and `tickWhen: "expr"` throttle it. Examples: startups growing, programs
+  playing their weekly game, clients' careers advancing. Unowned entities run with no actor, so
+  nothing is charged to or announced for the player.
+- **Entity income.** `income: [{ label, expr, when }]` is paid to the owner each tick, for
+  example commissions, retainers or ticket income.
 - **Operating units** sell capacity in a market every tick. Their results are available as
   `self._sold _demand _cap _load _rev _cost _profit`, with history in `self._hp`.
 

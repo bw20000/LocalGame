@@ -174,7 +174,8 @@ const E = loadEngine();
       const server = await S.start({ port: 0, quiet: true });
       const port = server.address().port;
       try {
-        const get = (p, headers) => fetch(`http://127.0.0.1:${port}${p}`, { headers }).then(async r => ({ status: r.status, body: await r.text() }));
+        // raw http, not fetch: fetch silently drops a custom Host header, which would hide the check
+        const get = (p, headers) => new Promise((resolve, reject) => require('http').get({ host: '127.0.0.1', port, path: p, headers }, r => { let body = ''; r.on('data', c => { body += c; }); r.on('end', () => resolve({ status: r.statusCode, body })); }).on('error', reject));
         const st = await get('/api/status'); assert.strictEqual(st.status, 200);
         const evil = await get('/api/status', { host: 'evil.example.com' }); assert.strictEqual(evil.status, 403);
         const cross = await get('/api/projects', { origin: 'https://evil.example.com' }); assert.strictEqual(cross.status, 403);

@@ -71,7 +71,7 @@ function build(opts = {}) {
     world: {
       cycle: C.cycle({ boom: 1.04, bust: 0.88, recession: f.recessions, perYear: 12, news: { expansion: 'Risk-on: valuations are rising and exits are easy', recession: 'Risk-off: valuations crash and the IPO window slams shut', slowdown: 'Investors grow cautious; rounds take longer to close', recovery: 'Capital is flowing again' } }),
       vars: [
-        { id: 'sentiment', label: 'Valuation sentiment', format: 'x', start: 1, process: { type: 'meanRevert', mean: 1, vol: 0.03, speed: 0.06, min: 0.45, max: 1.9, phase: { expansion: 1.12, slowdown: 0.95, recession: 0.7, recovery: 0.92 } },
+        { id: 'sentiment', label: 'Valuation sentiment', format: 'x', start: 1, process: { type: 'meanRevert', mean: 1, vol: 0.025, speed: 0.07, min: 0.5, max: 1.5, phase: { expansion: 1.08, slowdown: 0.95, recession: 0.72, recovery: 0.92 } },
           explain: 'How richly the market prices companies relative to normal. Drives entry prices, exit values and whether rounds get done.' },
         { id: 'rates', label: 'Interest rates', format: 'pct1', start: 0.045, process: { type: 'meanRevert', mean: 0.045, vol: 0.002, speed: 0.04, min: 0.005, max: 0.14, phase: { recession: 0.8, expansion: 1.05 } },
           shocks: [{ id: 'rateShock', label: 'Rate shock', chance: 0.006, size: 1.6, duration: 18, news: 'Central banks shock markets with a sharp rate hike', event: control ? 'rateShock' : undefined }] },
@@ -84,7 +84,7 @@ function build(opts = {}) {
       sector: { label: 'Sector', plural: 'Sectors', records: SECTORS.map(s => Object.assign({ heat: 1 }, s)),
         fields: { growthBase: { type: 'pct', label: 'Typical growth' }, marginMature: { type: 'pct', label: 'Mature margin' }, multiple: { type: 'number', label: 'Revenue multiple' }, vol: { type: 'number', label: 'Volatility' }, heat: { type: 'number', label: 'Heat', default: 1 }, glyph: 'text' },
         tick: [
-          { op: 'set', path: 'self.heat', value: 'clamp(self.heat + (1 - self.heat) * 0.06 + randn(0, 0.05 + self.vol * 0.05), 0.5, 2.2)' },
+          { op: 'set', path: 'self.heat', value: 'clamp(self.heat + (1 - self.heat) * 0.08 + randn(0, 0.04 + self.vol * 0.04), 0.6, 1.6)' },
           { op: 'chance', p: 'params.dealFlow * self.heat * world.demand', then: [
             { op: 'create', kind: 'company', as: 'c', owner: "'none'", set: { sector: 'self', founded: 'time.tick' } },
             { op: 'set', path: 'c.quality', value: 'clamp(randn(52, 16), 5, 98)' },
@@ -108,7 +108,7 @@ function build(opts = {}) {
           status: { type: 'text', default: 'active' }, founded: 'int', raiseOpened: { type: 'int', default: 0 }, ended: 'int', exitValue: { type: 'money', default: 0 }, boardSeat: { type: 'bool', default: false }, opsBoost: { type: 'pct', default: 0 }, keep: { type: 'bool', default: false }, acquiredAt: 'int'
         },
         derived: {
-          valuation: control ? 'max(5M, max(self.revenue * self.margin, 0) * 9 * world.sentiment * self.sector.heat * (1 + clamp(self.growth, -0.2, 0.6)) + self.revenue * 0.25)' : 'max(1.2M + self.quality * 30k, self.revenue * self.sector.multiple * world.sentiment * self.sector.heat * (1 + clamp(self.growth, -0.4, 2) * 1.6))',
+          valuation: control ? 'max(5M, max(self.revenue * self.margin, 0) * 9 * world.sentiment * self.sector.heat * (1 + clamp(self.growth, -0.2, 0.6)) + self.revenue * 0.25)' : 'max(1.2M + self.quality * 30k, self.revenue * self.sector.multiple * world.sentiment * sqrt(self.sector.heat) * (1 + clamp(self.growth, -0.4, 2) * 1.2))',
           equity: 'max(0, self.valuation + self.cash * 0.5 - self.debt)', ebitda: 'self.revenue * self.margin',
           burn: 'max(0, -self.revenue * self.margin / 12) + self.debt * world.rates / 12',
           runway: 'self.burn > 1 ? max(0, self.cash) / self.burn : 99',
@@ -117,7 +117,7 @@ function build(opts = {}) {
         },
         tickWhen: "self.status == 'active'",
         tick: [
-          { op: 'set', path: 'self.growth', value: 'clamp(self.growth * 0.975 + (self.quality - 55) * 0.0011 + (self.sector.heat - 1) * 0.003 - log(1 + self.revenue / 40M) * 0.005 + randn(0, self.sector.vol * 0.025), -0.5, max(0.25, 2 - log(1 + self.revenue / 20M) * 0.5))' },
+          { op: 'set', path: 'self.growth', value: 'clamp(self.growth * 0.975 + (self.quality - 55) * 0.0007 + (self.sector.heat - 1) * 0.003 + randn(0, self.sector.vol * 0.025), -0.5, max(0.12, 1.6 - log10(1 + self.revenue / 1M) * 0.55))' },
           { op: 'set', path: 'self.revenue', value: 'max(20k, self.revenue * (1 + self.growth / 12 + (world.demand - 1) * 0.03))' },
           { op: 'set', path: 'self.margin', value: 'clamp(self.margin + (self.sector.marginMature + self.opsBoost - 2.6 * exp(-self.revenue / 9M) + (self.quality - 55) * 0.002 - self.margin) * 0.05, -4, 0.6)' },
           { op: 'set', path: 'self.cash', value: 'self.cash + self.revenue * self.margin / 12 - self.debt * world.rates / 12' },
@@ -168,7 +168,7 @@ function build(opts = {}) {
       income: [{ label: 'Management fees', expr: 'org.committed * org.feePct / 12' }],
       costs: [{ label: 'Partners & team', expr: 'params.teamCost * org.partners + 40000 + org.committed * 0.0006' }],
       player: { name: control ? 'Ashgrove Capital' : 'Lighthouse Ventures', cash: String(L.fund), set: { committed: String(L.fund) },
-        start: control ? [] : [{ op: 'each', list: "top(filter(all('company'), it.status == 'active' && !it.owner && it.revenue < 1.5M), it.quality + randn(0, 25), 3)", do: [{ op: 'transfer', target: 'it', to: 'org' }, { op: 'set', path: 'it.stake', value: '0.12' }, { op: 'set', path: 'it.invested', value: 'it.valuation * 0.12' }, { op: 'cash', amount: '-it.valuation * 0.12', category: 'Investments', capex: true }, { op: 'set', path: 'it.boardSeat', value: 'true' }] }] },
+        start: control ? [] : [{ op: 'each', list: "top(filter(all('company'), it.status == 'active' && !it.owner && it.revenue < 1.5M), rand(), 3)", do: [{ op: 'transfer', target: 'it', to: 'org' }, { op: 'set', path: 'it.stake', value: '0.1' }, { op: 'set', path: 'it.invested', value: 'it.valuation * 0.1' }, { op: 'cash', amount: '-it.valuation * 0.1', category: 'Investments', capex: true }, { op: 'set', path: 'it.boardSeat', value: 'true' }] }] },
       rivals: { count: { full: 4, light: 3, background: 10 }, aiEvery: 2, entryChance: '0.15', maxActive: 10, failGrace: 6, backgroundValue: String(L.fund * 2),
         fixed: L.rivals.slice(0, 7).map((n, i) => ({ name: n, archetype: ['aggressive', 'disciplined', 'aggressive', 'disciplined'][i % 4] })),
         archetypes: [

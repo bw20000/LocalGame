@@ -8,7 +8,7 @@
 const C = require('../common');
 
 const LEX = {
-  broadway: { title: 'Opening Night', tagline: 'Every show is a gamble. Some run forever.', org: 'Production company', orgs: 'Producers', unit: 'show', units: 'shows', prop: 'property', props: 'properties', venueWord: 'theater', motif: 'playbill', glyph: 'ticket', award: 'Best Musical', awardShow: 'the Lantern Awards', critic: 'the critics', reviewWord: 'Reviews', audience: 'theatergoers', price: 135, perWeekCap: 9600, marketMult: 5.5, cut: 0.0, decayW: 0.985, budget: 16e6, runCostPct: 0.034, runWord: 'Now playing', closeWord: 'Close the show', sequelWord: 'Launch a national tour', sequelId: 'tour',
+  broadway: { title: 'Opening Night', tagline: 'Every show is a gamble. Some run forever.', org: 'Production company', orgs: 'Producers', unit: 'show', units: 'shows', prop: 'property', props: 'properties', venueWord: 'theater', motif: 'playbill', glyph: 'ticket', award: 'Best Musical', awardShow: 'the Lantern Awards', critic: 'the critics', reviewWord: 'Reviews', audience: 'theatergoers', price: 135, perWeekCap: 9600, marketMult: 7, cut: 0.0, decayW: 0.985, budget: 16e6, runCostPct: 0.034, runWord: 'Now playing', closeWord: 'Close the show', sequelWord: 'Launch a national tour', sequelId: 'tour',
     roles: [['director', 'Director'], ['star', 'Star'], ['composer', 'Composer']], genres: ['Musical', 'Revival', 'New play', 'Jukebox musical', 'Drama', 'Comedy'],
     scale: [{ value: 0.6, label: 'Intimate house (≈ 650 seats)' }, { value: 1, label: 'Mid-size house (≈ 1,100 seats)' }, { value: 1.5, label: 'Big musical house (≈ 1,600 seats)' }],
     stages: [['dev', 'Readings & workshops', 10], ['cap', 'Capitalization & casting', 6], ['reh', 'Rehearsals', 6], ['prev', 'Previews', 4], ['open', 'Opening night', 1]],
@@ -143,7 +143,7 @@ function build(opts = {}) {
     const sd = { id, label, duration: String(dur), cost: last ? '0' : `p.budget * ${(0.9 / (stagesTotal - 1)).toFixed(4)} * world.costIndex`, costCategory: 'Production costs',
       onEnter: [{ op: 'set', path: 'self.phase', value: `'${label}'` }] };
     if (i === 0) sd.gate = { label: 'Greenlight {p.name} for full production?', describe: 'From here costs climb fast. Development so far: {money(p.spent)}.', options: [{ label: 'Greenlight it' }, { label: 'Shelve it', cancel: true }] };
-    if (i === 1 && f.investors) sd.gate = { label: 'How will you finance {p.name}?', describe: 'Budget {money(p.budget)}. Investors pay half now and take a share of the profits.', options: [{ label: 'Self-finance — keep everything' }, { label: 'Bring in investors (half the budget, 45% of profits)', effects: [{ op: 'cash', amount: 'p.budget * 0.5', category: 'Investor capital' }, { op: 'set', path: 'self.investorShare', value: '1' }] }] };
+    if (i === 1 && f.investors) sd.gate = { label: 'How will you finance {p.name}?', describe: 'Budget {money(p.budget)}. Investors pay half now and take a share of the profits.', options: [{ label: 'Bring in investors (half the budget now, 45% of profits)', effects: [{ op: 'cash', amount: 'p.budget * 0.5', category: 'Investor capital' }, { op: 'set', path: 'self.investorShare', value: '1' }] }, { label: 'Self-finance — keep everything' }] };
     if (prev) {
       sd.risk = { chance: '0.05', effects: [{ op: 'add', path: 'self.quality', value: '-randInt(3, 10)' }], news: 'Trouble on {p.name}: creative clashes leak to the press' };
       sd.onComplete = [{ op: 'observe', target: 'self', field: 'quality', quality: '0.75' }];
@@ -174,7 +174,7 @@ function build(opts = {}) {
       cost: { cash: 'param.prop.rightsCost' }, costCategory: 'Rights',
       preview: [{ label: 'Audience appeal (estimate)', expr: "est(param.prop, 'appeal').value", format: 'score' }, { label: 'Critical potential (estimate)', expr: "est(param.prop, 'prestige').value", format: 'score' }, { label: 'Genre trend', expr: 'param.prop.genre.trend', format: 'x' }],
       effects: [{ op: 'transfer', target: 'param.prop', to: 'org' }], result: `Optioned {param.prop.name}`,
-      ai: { score: "count(owned('property', org), !it.used) < 3 && org.cash > param.prop.rightsCost * 20 ? (param.prop.appeal + param.prop.prestige * (archetype(org) == 'prestige' ? 1 : 0.4) + randn(0, 15) - 70) * 1000 : 0", candidates: 3, news: '{org.name} options {param.prop.name}' } },
+      ai: { score: "count(owned('property', org), !it.used) < 3 && org.cash > param.prop.rightsCost * 6 ? (param.prop.appeal + param.prop.prestige * (archetype(org) == 'prestige' ? 1 : 0.4) + randn(0, 15) - 70) * 1000 : 0", candidates: 3, news: '{org.name} options {param.prop.name}' } },
     { id: 'developProduction', label: `Develop a ${L.unit}`, verb: 'Start', category: 'develop', icon: 'play', primary: true,
       describe: `Attach talent and a budget to one of your ${L.props} and start development. You will get go/no-go decisions along the way.`, tradeoff: 'Talent fees and production costs add up before a single ticket is sold.', risk: 'Quality is uncertain until previews; many productions never recoup.',
       params: [{ id: 'prop', label: P, type: 'entity', kind: 'property', filter: 'it.owner == org && !it.used', sort: "est(it, 'appeal').value" },
@@ -196,7 +196,7 @@ function build(opts = {}) {
         { op: 'project', id: 'produce', target: 'pd', set: { budget: 'bud' }, name: '{param.prop.name}' }
       ],
       result: `{param.prop.name} enters development`,
-      ai: { score: "org.cash > params.budgetBase * param.budget * 1.3 && count(owned('production', org), it.phase != 'running' && it.phase != 'closed') < 2 ? (param.prop.appeal + param.director.skill * 0.6 + param.star.fame * 0.4 + randn(0, 12) - 75) * 2000 : 0", candidates: 3, news: '{org.name} greenlights {param.prop.name}' } },
+      ai: { score: "org.cash > params.budgetBase * param.budget * 0.7 && count(owned('production', org), it.phase != 'running' && it.phase != 'closed') < 2 ? (param.prop.appeal + param.director.skill * 0.6 + param.star.fame * 0.4 + randn(0, 12) - 75) * 2000 : 0", candidates: 3, news: '{org.name} greenlights {param.prop.name}' } },
     { id: 'marketingPush', label: 'Marketing push', verb: 'Promote', kind: 'production', category: 'run', icon: 'megaphone', cooldown: 8,
       describe: 'Ads, press, appearances. Buzz rises now and fades over time.', tradeoff: 'Real money for attention that fades within weeks.', cost: { cash: 'self.budget * 0.05' }, costCategory: 'Marketing',
       requires: [{ expr: "self.phase == 'running' || self.phase == '" + L.stages[L.stages.length - 2][1] + "'", msg: 'Only once it is about to open or running' }],

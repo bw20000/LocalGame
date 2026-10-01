@@ -350,7 +350,7 @@ button.brd-row:hover{background:var(--surface-2)}
 .mix{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .donut{width:150px;height:150px;flex:none}
 .donut circle.mix-s{stroke:var(--accent)}.donut .s1{stroke:var(--accent-2)}.donut .s2{stroke:var(--good)}.donut .s3{stroke:var(--warn)}.donut .s4{stroke:var(--muted)}.donut .s5{stroke:var(--bad)}
-.donut-v{font-family:var(--font-display);font-size:18px;fill:var(--ink)}.donut-l{font-size:8px;fill:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.donut-v{font-family:var(--font-display);font-size:17px;fill:var(--ink)}.donut-l{font-size:6.5px;fill:var(--muted);text-transform:uppercase;letter-spacing:.02em}
 .mix-legend{flex:1;min-width:160px;display:flex;flex-direction:column;gap:6px}
 .mix-l{display:grid;grid-template-columns:12px 1fr auto 36px;gap:8px;align-items:center;font-size:13px}
 .mix-l small{color:var(--muted);text-align:right}

@@ -213,7 +213,7 @@ studio/web/                 the studio's interface
 projects/<game>/            one folder per game: prompt, memory/, game/ (dev build), versions/,
                             reports/ (tests, balance, browser, audit, screenshots), releases/
 studio-data/                settings, preferences, model call log, caches (local only)
-docs/                       architecture, reference audit, GDL reference
+docs/                       architecture, reference audit, GDL reference, evaluation vs. the references
 tests/                      the studio's own test suite (npm test)
 ```
 
@@ -224,8 +224,15 @@ node studio/cli.js create "Build me a deep restaurant empire game…"
 node studio/cli.js modify <project> "The late game is too easy"
 node studio/cli.js audit|balance|export <project>
 node studio/cli.js remaster old-game.html "make it less overwhelming"
-npm test            # full studio test suite (npm run test:quick for unit tests only)
+npm test            # full studio test suite: engine, compiler, recipes, Balance Lab, server,
+                    # and a mock local-model run of the whole pipeline (npm run test:quick: unit tests only)
 ```
+
+## How good are the games?
+
+See [docs/EVALUATION.md](docs/EVALUATION.md). It compares generated games with the five reference
+games (interface load, depth, engineering) and lists the eight benchmark builds with their quality
+gates, design-review results and remaining balance findings.
 
 ## Honest limits
 
