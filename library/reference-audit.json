@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "games": [
+    { "id": "billionaire-empire", "role": "Holding-company founder", "loop": "deal-and-portfolio", "tick": "day (+D/W/M/Q/Y, next event)", "navItems": 37, "homeNumbersAtStart": 30, "architecture": "single file, ~590 terse global functions",
+      "keep": ["negotiation with reservation price + reasons + memory", "macro cycle + rates affecting valuations", "anti-portfolio", "succession/heirs", "delegation rules (auto-refi, auto-repay)", "capital allocation record", "why/driver explanations"],
+      "fix": ["37 nav destinations by data table", "number soup on home", "commissioner = cheat toggles", "full complexity on day one"] },
+    { "id": "broadway-producer", "role": "Producer", "loop": "project-lifecycle + operate", "tick": "day, weekly box office", "navItems": 41, "architecture": "single file, same shell as Billionaire",
+      "keep": ["multinomial-logit segment demand", "capacity-constrained sales with premium/discount pricing", "rights → development → capitalization → rehearsal → previews → opening lifecycle", "investor memory and reports", "needs-you task queue", "auto-pause categories", "estimated quality with judgment noise"],
+      "fix": ["5-step setup wizard with 9 modes", "41 rendered nav items", "overlapping inbox/tasks/calendar/news", "cheat-toggle commissioner", "text-heavy onboarding"] },
+    { "id": "college-football-empire", "role": "Head coach / AD", "loop": "roster-and-season", "tick": "day, weekly games", "navItems": 50, "architecture": "single file",
+      "keep": ["recruiting with visits/promises/scouting fog", "hot seat and booster pressure", "transfer portal + NIL", "real schools as starting points", "commissioner can edit teams/conferences/players"],
+      "fix": ["50 nav destinations", "repetitive seasonal chores", "dense tables"] },
+    { "id": "final-front-office", "role": "GM in 5 sports", "loop": "roster-and-season", "tick": "day/week/phase", "navItems": "tabbed", "architecture": "modular src/ bundled into one file (best)",
+      "keep": ["seeded RNG with child streams", "per-sport engines behind a registry", "valuation/trade/FA AI", "deep commissioner (create/move/relocate/expansion/force results)", "settings for realism levels", "modular code structure"],
+      "fix": ["little game feel (no moments, few explanations)", "functional gray UI", "no delegation"] },
+    { "id": "hollywood-empire", "role": "Studio head", "loop": "project-lifecycle", "tick": "day, weekly box office", "navItems": 18, "architecture": "single file with SCREENS registry",
+      "keep": ["dailies/test screenings/reshoots/trailer prediction", "estimate bands vs true values", "festivals and awards race", "scenarios & challenges", "state repair (findBadNumbers)", "compact task-ish navigation"],
+      "fix": ["7 difficulty sliders in setup", "Google Fonts network dependency", "brass-on-green still the shared dashboard template"] }
+  ],
+  "sharedWeaknesses": ["dark-panel + gold token set reused across 3 games", "KPI-tile row + tables as home", "nav by data table", "setup wizards front-load choices"],
+  "sharedStrengths": ["deep causal simulation", "offline single-file portability", "IndexedDB saves with import/export", "real/fictional disclaimers", "headless auto-players"]
+}
