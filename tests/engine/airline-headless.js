@@ -1,0 +1,23 @@
+const { loadEngine } = require('../../engine/node.js');
+const E = loadEngine();
+const pack = require('../../library/packs/airline.js');
+const gdl = pack.build({});
+let t0 = Date.now();
+const g = E.Game.create(gdl, { seed: process.argv[2] || 11, headless: true, options: { home: 'AUS', name: 'Bluebird Air' } });
+console.log('created in', Date.now() - t0, 'ms');
+const p = g.playerOrg();
+const sum = () => { const live = g.liveOrgs().filter(o => o.level < 3); return live.map(o => `${o.name.padEnd(17)} L${o.level} fleet=${String(o.m.fleet).padStart(3)} routes=${String(o.m.routes).padStart(3)} pax/wk=${String(Math.round(o.m.weeklyPax)).padStart(7)} LF=${(o.m.loadFactor*100).toFixed(0)}% profit/yr=${E.util.money(o.m.profitYear)} cash=${E.util.money(o.cash)}`).join('\n'); };
+console.log(sum());
+console.log('player routes:', g.owned('route', 'player').map(r => `${r.name} ${Math.round(r.dist)}km seats=${Math.round(r.seats)} sold=${Math.round(r._sold)} LF=${(r._load*100).toFixed(0)}% rev=${E.util.money(r._rev)} cost=${E.util.money(r._cost)} profit=${E.util.money(r._profit)}`));
+const a = g.actionDef('openRoute');
+const par = g.defaultParams(a, p);
+console.log('default openRoute params', par.origin && par.origin.code, par.dest && par.dest.code, par.aircraft && par.aircraft.name);
+const pv = g.previewAction(a, p, null, par); console.log('preview', pv.ok, pv.why, pv.items.map(i => i.label + ': ' + i.text).join(' | '));
+console.log('errors', g.diag.errors.slice(0, 10));
+t0 = Date.now();
+for (let i = 0; i < 52; i++) { g.tick(); for (const ev of g.state.events.pending.slice()) g.resolveEvent(ev.iid, 0); }
+console.log('1 year in', Date.now() - t0, 'ms; phase', g.state.world.phase, 'fuel', g.state.world.vars.fuel.toFixed(2));
+console.log(sum());
+console.log('player', E.util.money(p.cash), 'tier', g.state.progression.tier, 'brand', p.res.brand.toFixed(1), 'stakes', Object.entries(g.state.stakes).map(([k, s]) => k + '=' + s.value.toFixed(0)).join(' '));
+console.log('news', g.state.news.slice(0, 12).map(n => `[${n.pri}] ${n.text}`).join('\n'));
+console.log('errors', g.diag.errors.slice(0, 20));

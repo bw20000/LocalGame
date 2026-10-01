@@ -1,0 +1,11 @@
+{
+  "about": "Recommended local models. Sizes are the approximate download size of the default quantization in the Ollama library at the time of writing; once installed, the studio uses the real size reported by your runtime. You can install any other compatible model by name.",
+  "presets": [
+    { "id": "qwen3:8b", "label": "Fast", "tier": "fast", "approxSizeGB": 5.2, "paramsB": 8, "roles": ["fast"], "strengths": "Quick classification, extraction, summaries and simple edits. Good JSON compliance." },
+    { "id": "qwen3:14b", "label": "Balanced (recommended main model)", "tier": "balanced", "approxSizeGB": 9.3, "paramsB": 14.8, "roles": ["main", "critic", "fast"], "strengths": "Solid game-design reasoning and structured output with room for 16–32k context on a 24 GB Mac." },
+    { "id": "gpt-oss:20b", "label": "Best quality that fits a 24 GB Mac", "tier": "best", "approxSizeGB": 13.8, "paramsB": 21, "roles": ["main", "critic"], "strengths": "Strongest reasoning in this size class; mixture-of-experts so it runs fast. Use 8–16k context on 24 GB." },
+    { "id": "qwen2.5-coder:14b", "label": "Coding specialist", "tier": "balanced", "approxSizeGB": 9.0, "paramsB": 14.7, "roles": ["main"], "strengths": "Best for writing custom game modules (JavaScript) and formula-heavy patches." },
+    { "id": "gemma3:12b", "label": "Alternative main model", "tier": "balanced", "approxSizeGB": 8.1, "paramsB": 12, "roles": ["main", "critic"], "strengths": "Good writing for events and flavor text; can also read screenshots (vision) for the UX critic." },
+    { "id": "qwen3:30b", "label": "Large (needs a higher GPU memory limit)", "tier": "large", "approxSizeGB": 18.6, "paramsB": 30, "roles": ["main"], "strengths": "Higher quality, but on 24 GB it exceeds the default GPU budget. Only for advanced users who raise iogpu.wired_limit_mb." }
+  ]
+}

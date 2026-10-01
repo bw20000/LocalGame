@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "about": "Anti-bloat rubric (Rule 27). Every candidate feature is scored 0–5 on each criterion. keep if value - complexityCost >= threshold.keep; otherwise apply the first applicable remedy.",
+  "criteria": [
+    { "id": "fantasy", "label": "Player fantasy", "question": "Does it reinforce what the player wants to feel?", "weight": 1.2 },
+    { "id": "decision", "label": "Decision value", "question": "Does it create interesting decisions with tradeoffs?", "weight": 1.5 },
+    { "id": "connection", "label": "System connection", "question": "Does it interact with other mechanics (inputs AND outputs)?", "weight": 1.0 },
+    { "id": "feedback", "label": "Feedback", "question": "Will the player understand its effects?", "weight": 1.0 },
+    { "id": "frequency", "label": "Frequency", "question": "Will the player actually use it regularly or at key moments?", "weight": 0.8 },
+    { "id": "uniqueness", "label": "Uniqueness", "question": "Is it NOT already provided by another system?", "weight": 1.0 }
+  ],
+  "complexityCost": { "label": "Complexity cost", "question": "Mental load added (new screen = 2, new resource = 1.5, new parameterized action = 1, new meter = 1, automated/background = 0.3)." },
+  "threshold": { "keep": 2.6, "automate": 1.8, "merge": 1.2 },
+  "remedies": ["simplify", "automate (policy/delegation)", "merge into related system", "abstract into a driver", "remove"]
+}

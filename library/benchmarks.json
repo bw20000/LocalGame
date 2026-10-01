@@ -1,0 +1,21 @@
+{
+  "about": "Benchmark briefs used to check that the studio generalizes across management genres. Run them from the Benchmarks page (quick builds) — they are not generated during installation.",
+  "briefs": [
+    { "id": "A", "name": "Airline CEO", "genre": "airline", "prompt": "Build me a deep airline management game where I start with a small regional airline and can eventually build a global carrier. I want realistic aircraft economics, routes, hubs, labor, airport negotiations, customer segmentation, alliances, acquisitions, recessions, fuel prices, regulators, competitors, history, commissioner mode, and a very polished visual interface. Make it deep but not overwhelming.",
+      "expect": ["routes on a world map", "aircraft lease/buy/order", "hubs", "union", "airport slot negotiations", "business/leisure segments", "alliances", "acquisitions", "fuel shocks", "economic cycle", "regulators", "rival airlines", "history", "commissioner"] },
+    { "id": "B", "name": "Sports Agent", "genre": "sports-agent", "prompt": "Make a sports agent career game. I sign athletes, negotiate their contracts and endorsements, manage their careers and reputations, and compete with rival agencies for the best clients. Contract negotiations should be deep and realistic. Include a commissioner mode and history.",
+      "expect": ["client roster", "contract negotiations", "endorsements", "rival agencies", "client loyalty", "career arcs"] },
+    { "id": "C", "name": "Restaurant Group", "genre": "restaurant", "prompt": "I want a restaurant group tycoon game. Start with one restaurant, hire chefs, design menus and concepts, deal with critics and inspections, and expand into a restaurant empire across cities. Deep but easy to understand.",
+      "expect": ["venues in cities", "concepts", "chefs/talent", "critics", "inspections", "expansion"] },
+    { "id": "D", "name": "Venture Capital", "genre": "venture-capital", "prompt": "Create a venture capital firm simulator. I raise funds from LPs, source and evaluate startups, negotiate term sheets, sit on boards, follow on or write off investments, and build a track record. Include market cycles and an anti-portfolio.",
+      "expect": ["fund raising", "deal flow", "term sheets", "portfolio companies", "follow-ons", "exits", "anti-portfolio", "cycles"] },
+    { "id": "E", "name": "Broadway Producer", "genre": "broadway", "prompt": "Build a Broadway producer game. I option rights, hire creative teams and stars, raise capital from investors, book theaters, run previews and openings, handle critics, and manage long runs and tours. It should feel like the real business of theater.",
+      "expect": ["rights", "creative team", "investors", "theaters", "previews/opening", "critics", "long runs"] },
+    { "id": "F", "name": "Theme Park Company", "genre": "theme-park", "prompt": "Theme park company tycoon: build and run parks, add rides and attractions, price tickets and passes, manage crowds and safety, compete with rival parks, and expand into a global entertainment company.",
+      "expect": ["parks", "attractions", "ticket pricing", "safety", "rival parks", "expansion"] },
+    { "id": "G", "name": "Private Equity", "genre": "private-equity", "prompt": "Make a private equity game. I raise funds, buy companies with leverage, install management, run operational improvements, refinance, and exit through sales or IPOs. Credit cycles and interest rates should matter a lot.",
+      "expect": ["funds", "leveraged buyouts", "portfolio operations", "refinancing", "exits", "credit cycle"] },
+    { "id": "H", "name": "University Athletic Director", "genre": "university", "prompt": "I want to be a university athletic director. Hire and fire coaches, manage budgets across sports, build facilities, negotiate media and conference deals, deal with boosters, compliance and the university president, and build a winning, financially healthy program.",
+      "expect": ["coaches", "sports programs", "facilities", "media deals", "boosters", "compliance", "president/board"] }
+  ]
+}
