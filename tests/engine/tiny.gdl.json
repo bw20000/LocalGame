@@ -1,0 +1,40 @@
+{
+  "gdl": 1,
+  "meta": { "title": "Lemonade Test", "role": "Owner" },
+  "time": { "unit": "week", "start": "2026-01-05" },
+  "params": { "demandScale": 400 },
+  "world": { "vars": [ { "id": "sugar", "label": "Sugar", "start": 1, "process": { "type": "meanRevert", "mean": 1, "vol": 0.03, "min": 0.3, "max": 4 }, "shocks": [ { "id": "spike", "label": "Sugar spike", "chance": 0.01, "size": 1.8 } ] } ],
+    "cycle": { "start": "boom", "phases": [ { "id": "boom", "label": "Boom", "demand": 1.1, "next": { "bust": 1 } }, { "id": "bust", "label": "Bust", "demand": 0.85, "next": { "boom": 1 } } ] } },
+  "resources": [ { "id": "reputation", "label": "Reputation", "start": 40, "min": 0, "max": 100, "decay": { "toward": 40, "rate": 0.02 } } ],
+  "kinds": {
+    "street": { "label": "Street", "records": [ { "id": "main", "name": "Main St", "traffic": 1.4 }, { "id": "elm", "name": "Elm St", "traffic": 0.8 }, { "id": "oak", "name": "Oak Ave", "traffic": 1.0 } ], "fields": { "traffic": { "type": "number" } } },
+    "stand": { "label": "Stand", "fields": { "street": { "type": "ref", "ref": "street" }, "price": { "type": "money", "default": 2 }, "quality": { "type": "number", "default": 50 } },
+      "upkeep": [ { "label": "Rent", "expr": "30 * self.street.traffic" } ],
+      "operate": { "market": "lemonade", "capacity": "300", "price": "self.price", "attrs": { "quality": "self.quality / 50", "rep": "org.reputation / 50" },
+        "costs": [ { "label": "Ingredients", "expr": "sold * 0.5 * world.sugar" } ], "salesLabel": "Lemonade sales" }
+    }
+  },
+  "markets": { "lemonade": { "key": "self.street.id", "size": "params.demandScale * self.street.traffic * world.demand", "refPrice": "2", "outside": "0",
+     "segments": [ { "id": "kids", "share": 0.6, "priceSens": 2.2, "weights": { "quality": 0.5, "rep": 0.3 } }, { "id": "adults", "share": 0.4, "priceSens": 0.8, "priceMult": 1.3, "weights": { "quality": 1.2, "rep": 0.6 } } ] } },
+  "orgs": { "label": "Stand company", "player": { "name": "Sunny Cups", "cash": 1000, "start": [ { "op": "create", "kind": "stand", "set": { "street": "'main'" } } ] },
+    "rivals": { "count": { "full": 2, "light": 1, "background": 2 }, "cash": 1000,
+      "archetypes": [ { "id": "cheap", "label": "Discounter", "risk": 0.7, "set": {}, "start": [ { "op": "create", "kind": "stand", "set": { "street": "pick(['main','elm','oak'])", "price": "1.5" } } ], "weights": { "openStand": 1.5 } },
+                      { "id": "fancy", "label": "Artisan", "risk": 0.4, "start": [ { "op": "create", "kind": "stand", "set": { "street": "pick(['main','oak'])", "price": "3", "quality": "70" } } ] } ] } },
+  "actions": [
+    { "id": "openStand", "label": "Open a stand", "params": [ { "id": "street", "type": "entity", "kind": "street", "label": "Street", "sort": "it.traffic" } ],
+      "cost": { "cash": "250" }, "capex": true,
+      "forecast": { "kind": "stand", "set": { "street": "param.street", "price": "2", "quality": "50" } },
+      "preview": [ { "label": "Weekly profit (est.)", "expr": "fc.profit", "format": "money" }, { "label": "Competitors", "expr": "fc.competitors", "format": "int" } ],
+      "effects": [ { "op": "create", "kind": "stand", "set": { "street": "param.street" }, "as": "s" }, { "op": "news", "text": "Opened a stand on {param.street.name}" } ],
+      "result": "New stand on {param.street.name}", "ai": { "score": "fc.profit", "candidates": 3 } },
+    { "id": "setPrice", "label": "Set price", "kind": "stand", "params": [ { "id": "price", "type": "money", "min": 0.5, "max": 6, "default": "self.price" } ], "effects": [ { "op": "set", "path": "self.price", "value": "param.price" } ] }
+  ],
+  "events": [ { "id": "heatwave", "title": "Heatwave on {s.street.name}", "text": "Everyone is thirsty.", "priority": "important", "chance": "0.05", "bind": { "s": { "kind": "stand", "owner": "player" } },
+     "choices": [ { "label": "Raise prices", "effects": [ { "op": "mul", "path": "s.price", "value": "1.2" }, { "op": "resource", "id": "reputation", "add": "-3" } ] }, { "label": "Hold prices", "effects": [ { "op": "resource", "id": "reputation", "add": "4" } ] } ] } ],
+  "progression": { "tiers": [ { "id": "small", "label": "Corner stand" }, { "id": "chain", "label": "Lemonade chain", "when": "count(owned('stand')) >= 3" } ],
+    "failure": { "when": "player.cash < -500", "grace": 4, "rescue": [ { "id": "loan", "label": "Family loan", "effects": [ { "op": "cash", "amount": "1500", "category": "Financing" } ], "once": true } ] } },
+  "history": { "records": [ { "id": "bestWeek", "label": "Best weekly profit", "expr": "org.m.profit", "format": "money" } ],
+    "milestones": [ { "id": "first1k", "label": "First $1,000 week", "when": "player.m.revenue >= 1000" } ],
+    "awards": [ { "id": "best", "label": "Best Stand Company", "score": "org.m.profitYear" } ] },
+  "warmup": 4
+}
