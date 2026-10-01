@@ -986,8 +986,37 @@ function build(opts = {}) {
     { term: 'Depreciation', text: 'The yearly loss in value of owned aircraft. It reduces reported profit but not cash.' },
     { term: 'Tier', text: 'Regional → National → Continental → Global. Each unlocks longer routes and new strategic options.' }
   ];
+  gdl.balance = { knobs: [
+    { path: 'params.demandK', label: 'Market size', effect: 'easier', min: 50000, max: 140000 },
+    { path: 'params.outsideBase', label: 'Strength of other carriers & ground transport', effect: 'harder', min: 0, max: 1.4 },
+    { path: 'params.feeBase', label: 'Airport fees', effect: 'harder', min: 600, max: 2200 },
+    { path: 'params.fareBase', label: 'Base fare', effect: 'easier', min: 35, max: 90 }
+  ], targets: { smartMargin: [0.04, 0.16], passiveSurvivesYears: 1.5, carelessFailsBy: 6 } };
   gdl.trace = {};
   return gdl;
 }
 
-module.exports = { id: 'airline', genres: ['airline'], build, HOME_CHOICES, RIVALS };
+/* Feature catalog: which requirement keywords each system satisfies, and where it lives in the
+   definition. Used for requirement tracing (the final audit) and for the anti-bloat review. */
+const FEATURES = [
+  { id: 'regional-start', label: 'Start as a small regional airline', keywords: ['regional', 'small airline', 'start small', 'start with'], paths: ['orgs.player.start', 'progression.tiers.regional'] },
+  { id: 'global-growth', label: 'Grow into a global carrier (tiers)', keywords: ['global carrier', 'global', 'grow', 'eventually', 'progression'], paths: ['progression.tiers'] },
+  { id: 'aircraft-economics', label: 'Realistic aircraft economics (seats, range, burn, crew, maintenance, leases, depreciation)', keywords: ['aircraft', 'fleet', 'plane', 'economics'], paths: ['kinds.aircraftType', 'kinds.aircraft', 'kinds.route.operate.costs', 'actions.orderAircraft', 'actions.leaseAircraft', 'actions.buyUsed'] },
+  { id: 'routes', label: 'Routes with fares, frequency and capacity', keywords: ['route', 'routes', 'network', 'destinations', 'flights'], paths: ['kinds.route', 'actions.openRoute', 'actions.setFare', 'actions.setFrequency', 'actions.closeRoute'] },
+  { id: 'hubs', label: 'Bases, focus cities and hubs with connectivity effects', keywords: ['hub', 'hubs', 'base', 'bases'], paths: ['kinds.base', 'actions.openBase', 'actions.upgradeBase', 'kinds.route.operate.attrs.conn'] },
+  { id: 'labor', label: 'Crew union morale, contracts and strikes', keywords: ['labor', 'labour', 'union', 'unions', 'crew', 'pilots', 'strike', 'staff'], paths: ['stakeholders.union', 'negotiations.laborContract', 'events.strikeThreat', 'events.contractTalks', 'policies.crewPay'], flag: 'labor' },
+  { id: 'airport-negotiations', label: 'Airport slot & fee negotiations', keywords: ['airport negotiation', 'airport negotiations', 'slots', 'airport'], paths: ['negotiations.airportDeal', 'actions.negotiateAirport', 'kinds.agreement'] },
+  { id: 'segmentation', label: 'Customer segmentation (business, leisure, visiting friends & family)', keywords: ['segment', 'segmentation', 'customers', 'business travelers', 'leisure'], paths: ['markets.airTravel.segments', 'actions.changeCabin'] },
+  { id: 'alliances', label: 'Airline alliances', keywords: ['alliance', 'alliances', 'partners', 'codeshare'], paths: ['kinds.alliance', 'actions.joinAlliance', 'negotiations.allianceJoin', 'events.allianceInvite'], flag: 'alliances' },
+  { id: 'acquisitions', label: 'Acquisitions and mergers', keywords: ['acquisition', 'acquisitions', 'acquire', 'merger', 'mergers', 'buy rivals', 'takeover'], paths: ['actions.acquireAirline', 'negotiations.acquisition', 'projects.integration'], flag: 'acquisitions' },
+  { id: 'recessions', label: 'Economic cycle with recessions', keywords: ['recession', 'recessions', 'economy', 'economic cycle', 'downturn'], paths: ['world.cycle', 'events.recessionBoard'], flag: 'recessions' },
+  { id: 'fuel', label: 'Volatile fuel prices, shocks and hedging', keywords: ['fuel', 'oil', 'jet fuel', 'hedging'], paths: ['world.vars.fuel', 'policies.fuelHedging', 'events.fuelSpike'], flag: 'fuel' },
+  { id: 'regulators', label: 'Regulators: scrutiny, investigations, merger blocks', keywords: ['regulator', 'regulators', 'regulation', 'antitrust', 'government'], paths: ['stakeholders.scrutiny', 'events.investigation'], flag: 'regulators' },
+  { id: 'competitors', label: 'Strategic rival airlines with archetypes, memory and lifecycles', keywords: ['competitor', 'competitors', 'rivals', 'rival', 'competition'], paths: ['orgs.rivals', 'events.fareWar'] },
+  { id: 'history', label: 'History: records, awards, milestones, timeline, annual reviews', keywords: ['history', 'records', 'awards', 'legacy', 'milestones'], paths: ['history.records', 'history.awards', 'history.milestones'], flag: 'history' },
+  { id: 'board', label: 'Board objectives and confidence', keywords: ['board', 'objectives', 'goals', 'ceo'], paths: ['stakeholders.board', 'progression.objectives'] },
+  { id: 'delegation', label: 'Delegation via policies (revenue management, maintenance, pay, hedging, marketing)', keywords: ['delegate', 'delegation', 'automation', 'automate', 'not overwhelming', 'tedious'], paths: ['policies'] },
+  { id: 'visual', label: 'Distinct visual identity: departure-board motif, world route map, aircraft silhouettes', keywords: ['visual', 'polished', 'interface', 'ui', 'beautiful', 'map'], paths: ['theme', 'ui.screens.network', 'ui.screens.fleet'] }
+];
+
+module.exports = { id: 'airline', genres: ['airline'], build, HOME_CHOICES, RIVALS, FEATURES };

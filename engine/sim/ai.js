@@ -84,6 +84,26 @@
         }
       }
     },
+    /* Delegated action for any org (player policies use this): best-scoring candidate via ai.score. */
+    autoAct(actionId, org, opts = {}) {
+      const a = this.def.actions[actionId];
+      if (!a || !a.ai) return null;
+      const selves = a.scope === 'entity' ? (opts.self ? [opts.self] : this.owned(a.kind, org.id).slice()) : [null];
+      let best = null;
+      for (const self of selves) {
+        if (!this.actionVisible(a, org, self)) continue;
+        for (const param of this.aiCandidateParams(a, org, self, opts.candidates || a.ai.candidates || 4)) {
+          const chk = this.checkAction(a, org, self, param);
+          if (!chk.ok) continue;
+          const score = this.num(a.ai.score != null ? a.ai.score : 1, chk.sc, 0);
+          if (score > (opts.minScore || 0) && (!best || score > best.score)) best = { self, param, score };
+        }
+      }
+      if (!best) return null;
+      const res = this.act(a.id, best.param, { org, self: best.self });
+      if (res.ok && org.isPlayer && !this.state.warm) this.news(`Your team: ${res.result || a.label}`, 'routine', { tag: 'delegated' });
+      return res.ok ? res : null;
+    },
     noteRivalry(org, param, self) {
       const pid = this.state.player;
       const touches = (x) => x && typeof x === 'object' && (x.owner === pid || x.id === pid);

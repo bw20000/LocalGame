@@ -476,6 +476,13 @@
         case 'stop': sc.__stop = true; return;
         case 'toast': if (actor && !actor.isPlayer) return; this.emit('toast', { text: this.tpl(op.text, sc), tone: op.tone || 'info' }); return;
         case 'hook': case 'call': if (this.hooks) this.hooks.run(op.hook || op.name, sc, op.args); return;
+        case 'autoAct': {
+          // delegation: the org's staff take an action using its ai.score (same logic rivals use)
+          const n = op.max != null ? Math.max(0, Math.round(this.num(op.max, sc, 1))) : 1;
+          const min = op.minScore != null ? this.num(op.minScore, sc, 0) : 0;
+          for (let i = 0; i < n; i++) { const r = this.autoAct(op.action, actor, { minScore: min, self: op.self ? this.ev(op.self, sc) : null, candidates: op.candidates }); if (!r) break; }
+          return;
+        }
         case 'endGame': this.endGame(op.outcome || 'over', this.tpl(op.text || '', sc)); return;
         default: this.report('op', new Error('Unknown op ' + kind));
       }
